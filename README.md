@@ -59,6 +59,10 @@ See output
 'Debug printers typenames' need to be cast manually with <typename>
 "list" = "<class 'gdbprint_c.misctypes.LinkedListPrinter'>" (list)
 
+For example installed packages:
+  gdbprint_c           C data structuras
+  gdbprint_libstdcpp   GNU libstdcpp STL data structuras
+  
 
 Print default elements count (fetch_array or fetch_string)
   p_v name[]
