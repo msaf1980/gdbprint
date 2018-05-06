@@ -129,6 +129,7 @@ p_s [p | printers]                                       Show registered printer
 
 
 
+
 Examples:
 p_v num + 1                          Print numeric variables + constant
 p_v num + num2                       Print sum of numeric variables
