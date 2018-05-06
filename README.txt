@@ -129,6 +129,14 @@ p_s [p | printers]                                       Show registered printer
 
 
 
+Usage:
+Add to .gdbinit gdbprint and custom printers packages
+
+py import gdbprint
+py import gdbprint_libstdcpp
+py import gdbprint_c
+
+
 
 Examples:
 p_v num + 1                          Print numeric variables + constant
