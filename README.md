@@ -111,6 +111,24 @@ Filter example:
 @ Equal to { @ _ = 0 }
 
 
+Options:
+
+p_s [output_type | o] [text | named]                                          Set output type
+p_s [debug | d] [(1 | yes | y | true | on) (0 | no | n | false | off)] (N)    Set debug level (0 - disable)
+p_s [fetch array | f a] SIZE                                                  Default fetch array size (by default 50)
+p_s [fetch string | f s] SIZE                                                 Default fetch string size (by default 400)
+p_s [codepage | cp] CODEPAGE [CODEPAGE_FAILBACK]                              Codepage for single-byte (char) string 
+p_s [verbose | v] [0 | 1 | 2]                                                 Verbose Output (by default 2) 
+                                                                              0 - only value, 1 - print type, 
+                                                                              2 - print length, 3 - also print full type (for STL). 
+failback codepage is 1251 # Codepage for single-byte (char) string. Used if codepage is UTF and conversion failed
+width is 80 # Row width for display simple arrays (p_s [width | w] WIDTH
+depth is 2 # Depth for expand complex structuras in arrays and list (p_s [depth | de] DEPTH)
+
+p_s [p | printers] # Show registered printers
+
+
+
 Examples:
 p_v num + 1                          Print numeric variables + constant
 p_v num + num2                       Print sum of numeric variables
