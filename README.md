@@ -28,15 +28,58 @@ Don't dereference structure fields
 
 Print elements of iterable structuras (arrays, list, map, set, etc.) or string
   p_v name[range]
+Custom ierable structuras browsed with printers API (see gdbprinters.py)
+See output
+  p_s p
+
+'Debug printers' interpeted by type name
+"std::tr1::unordered_set" = "<class 'gdbprint_libstdcpp.libstdcpp_v3.StdUnorderedSetPrinter'>" (set)
+"std::unordered_set" = "<class 'gdbprint_libstdcpp.libstdcpp_v3.StdUnorderedSetPrinter'>" (set)
+"std::unique_ptr" = "<class 'gdbprint_libstdcpp.libstdcpp_v3.StdUniquePointerPrinter'>" (pointer)
+"std::bitset" = "<class 'gdbprint_libstdcpp.libstdcpp_v3.StdBitsetPrinter'>" (bitset)
+"std::forward_list" = "<class 'gdbprint_libstdcpp.libstdcpp_v3.StdForwardListPrinter'>" (list)
+"std::stack" = "<class 'gdbprint_libstdcpp.libstdcpp_v3.StdStackPrinter'>" (subtype)
+"std::multimap" = "<class 'gdbprint_libstdcpp.libstdcpp_v3.StdMapPrinter'>" (map)
+"std::map" = "<class 'gdbprint_libstdcpp.libstdcpp_v3.StdMapPrinter'>" (map)
+"std::auto_ptr" = "<class 'gdbprint_libstdcpp.libstdcpp_v3.StdAutoPointerPrinter'>" (pointer)
+"std::weak_ptr" = "<class 'gdbprint_libstdcpp.libstdcpp_v3.StdSharedPointerPrinter'>" (pointer)
+"std::__cxx11::basic_string" = "<class 'gdbprint_libstdcpp.libstdcpp_v3.StdStringPrinter'>" (string)
+"std::deque" = "<class 'gdbprint_libstdcpp.libstdcpp_v3.StdDequePrinter'>" (list_sized)
+"std::tuple" = "<class 'gdbprint_libstdcpp.libstdcpp_v3.StdTuplePrinter'>" (struct)
+"std::basic_string" = "<class 'gdbprint_libstdcpp.libstdcpp_v3.StdStringPrinter'>" (string)
+"std::unordered_map" = "<class 'gdbprint_libstdcpp.libstdcpp_v3.StdUnorderedMapPrinter'>" (map)
+"std::array" = "<class 'gdbprint_libstdcpp.libstdcpp_v3.StdArrayPrinter'>" (array)
+"std::set" = "<class 'gdbprint_libstdcpp.libstdcpp_v3.StdSetPrinter'>" (set)
+"std::list" = "<class 'gdbprint_libstdcpp.libstdcpp_v3.StdListPrinter'>" (list)
+"std::vector" = "<class 'gdbprint_libstdcpp.libstdcpp_v3.StdVectorPrinter'>" (array)
+"std::shared_ptr" = "<class 'gdbprint_libstdcpp.libstdcpp_v3.StdSharedPointerPrinter'>" (pointer)
+"std::tr1::unordered_map" = "<class 'gdbprint_libstdcpp.libstdcpp_v3.StdUnorderedMapPrinter'>" (map)
+"std::multiset" = "<class 'gdbprint_libstdcpp.libstdcpp_v3.StdSetPrinter'>" (set)
+
+'Debug printers typenames' need to be cast manually with <typename>
+"list" = "<class 'gdbprint_c.misctypes.LinkedListPrinter'>" (list)
+
 
 Print default elements count (fetch_array or fetch_string)
   p_v name[]
 or
   p_v name
 
-Print linked list with iterator next (disable dereference iterator)
-  p_v name[range --> next ].((*next))
+Transform
+<str>         string (char[] alredy interpreted as null-terrminated string) with codepage (if decode failed, with codepage_failback)
+<utf-8>       utf-8 string (if decode failed, with codepage_failback)
+<arr>         array
+<typename>    typename (for custom data structuras
   
+Transform combinations
+<arr,utf-8>   - array (try to interpreter char sequence as utf-8)
+
+Print linked list with iterator next (disable dereference iterator) (by default used transform 'list' typename)
+  p_v name[range --> next ].((*next))
+
+Print linked list with custom iterator next (disable dereference iterator)
+  p_v name <list> [range --> next ].((*next))
+
 Print linked list with iterator iter.next (hide iter)
   p_v name[range --> iter.next ].((*iter))
 
@@ -63,13 +106,6 @@ Filter example:
 
 @ Equal to { @ _ = 0 }
 
-Transform
-<str>         string (char[] alredy interpreted as null-terrminated string) with codepage (if decode failed, with codepage_failback)
-<utf-8>       utf-8 string (if decode failed, with codepage_failback)
-<arr>         array
-
-Transform combinations
-<arr,utf-8>   - array (try to interpreter char sequence as utf-8)
 
 Examples:
 p_v num + 1                          Print numeric variables + constant
