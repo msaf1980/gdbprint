@@ -34,6 +34,7 @@ See output
 
 'Debug printers' interpeted by type name
 "std::tr1::unordered_set" = "<class 'gdbprint_libstdcpp.libstdcpp_v3.StdUnorderedSetPrinter'>" (set)
+
 "std::unordered_set" = "<class 'gdbprint_libstdcpp.libstdcpp_v3.StdUnorderedSetPrinter'>" (set)
 "std::unique_ptr" = "<class 'gdbprint_libstdcpp.libstdcpp_v3.StdUniquePointerPrinter'>" (pointer)
 "std::bitset" = "<class 'gdbprint_libstdcpp.libstdcpp_v3.StdBitsetPrinter'>" (bitset)
