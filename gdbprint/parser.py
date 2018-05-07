@@ -154,6 +154,9 @@ class ValueOut:
         self.subtype = None
         self.desc = None
 
+    def print_pre(self, indent):
+        print_str(indent)
+
     def print_name(self, indent = ""):
         if not self.name is None:
             if config.out_type == OutType.TEXT and self.name[0] == "[" and self.name[-1] == "]":
@@ -277,6 +280,9 @@ class ValueOut:
 
             print_str(" }%s" % br)
 
+        self.print_endline(endline, comma)
+
+    def print_endline(self, endline = True, comma = False):
         addstr = ""
         if comma:
             addstr += ","
@@ -285,7 +291,7 @@ class ValueOut:
 
         if endline or comma:
             print_str(addstr)
- 
+
     def print_post(self, indent = "", endline = False, comma = False, end = False):
         if self.subtype == SubType.MULTI and self.error is None:
             if config.out_type == OutType.NAMED and config.debug > 3:
@@ -310,14 +316,7 @@ class ValueOut:
 
             print_str(" }%s" % br)
 
-        addstr = ""
-        if comma:
-            addstr += ","
-        if endline:
-            addstr += "\n"
-
-        if endline or comma:
-            print_str(addstr)
+        self.print_endline(endline, comma)
 
     def print_all(self, indent = "", endline = False, comma = False):
         self.print_name(indent)

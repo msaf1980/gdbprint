@@ -27,16 +27,27 @@ from parser import Range
 from parser import Mod
 from parser import ValueOut, SubType
 
-def print_pre1(indent, pref, post, print_eq = True):
-    if not pref is None and pref <> "":
-        if not indent is None and indent <> "":
-            print_str(indent)
-        print_str(pref)
-    if print_eq:
-    #if print_eq or (not pref  is None and pref <> ""):
-        print_str(" =")
-    if not post is None and post <> "":
-        print_str(post)
+def calc_cwidth(vtype):
+    cwidth = 0
+    if str(vtype) in ('char', 'signed char', 'unsigned char'):
+        num_type = 1
+    elif str(vtype) == 'wchar_t':
+        num_type = 2
+    else:
+        if vtype.code == gdb.TYPE_CODE_BOOL:
+            num_type = 0
+            cwidth = 6 + len(str(sys.maxint))
+        elif vtype.code == gdb.TYPE_CODE_INT:
+            num_type = 0
+            cwidth = 6 + len(str(sys.maxint))
+            #cwidth = 6 + len(str(sys.maxsize)) + len(str(sys.maxint))
+        elif vtype.code == gdb.TYPE_CODE_FLT:
+            num_type = 0
+            cwidth = 6 + len(str(sys.maxint))
+        else:
+            num_type = -1
+
+    return (num_type, cwidth)
 
 
 class GdbValue:
@@ -124,7 +135,6 @@ class GdbValue:
                 while c > 0:
                     cast_t = cast_t.pointer()
                     c -= 1
-            #print_str(str(cast_t) + "\n")
             return GdbValue(self.v.cast(cast_t))
         except Exception as e:
             if config.debug:
@@ -133,28 +143,17 @@ class GdbValue:
                 raise ValueError("<unresolve to '" + cast + "': " + str(e) + ">")
 
     def print_v(self, name, depth, expr, pos, print_name = True, print_head = True, indent = "", mod = None):
-        #print_str("\n" + name + "\n")
         value = ValueOut()
-        #if not name is None and print_name:
-        #    if name[0] == "[" and name[-1] == "]":
-        #        self.pref = name
-        #    else:
-        #        self.pref = "\"" + name + "\""
-        #else:
-        #    self.pref = ""
+
         if print_name:
             value.name = name
             value.print_name(indent)
 
         if config.verbose > 0 and print_head:
             if config.verbose > 2:
-                #self.post = " (" + str(self.vtype) + ")"
                 value.typename = str(self.vtype)
             else:
-                #self.post = " (" + p_name(str(self.vtype)) + ")"
                 value.typename = p_name(str(self.vtype))
-        #else:
-        #    self.post = ""
 
         if self.v.address == 0:
             value.address = self.v.address
@@ -166,29 +165,21 @@ class GdbValue:
             value.print_value()
             return
 
-        #print_str("\n%s (%s) type %s\n" % (name, str(self.vtype), typename(self.vtype.code)))
         if mod is None:
             mod = Mod()
             pos = mod.get_transform(expr, pos)
-        #print_str("\n%d\n" % pos)
-        #print_obj(mod)
-        #(filters, pos) = self.get_filters(expr, pos)
+
         if not mod.transform is None and mod.transform.v == Transform.SIMPLE:
-            #print_pre(indent, self.pref, self.post + " " + str(self.v), print_eq)
             value.value = str(self.v)
             value.print_value()
         elif self.vtype.code in (gdb.TYPE_CODE_STRUCT, gdb.TYPE_CODE_UNION):
-            #if print_header:
-            #    try:
-            #        value.address = self.v.address
-            #    except:
-            #        pass
-            #print_pre(indent, self.pref, self.post + " ", print_eq)
+            if print_head:
+                value.address = self.v.address
+
             value.print_value()
             self.print_struct(depth, expr, pos, indent, mod)
             return
         elif str(self.vtype) in ('char', 'signed char', 'unsigned char'):
-            #print_pre(indent, self.pref, self.post + " " + char_to_string(self.v, config.codepage), print_eq)
             value.value = char_to_string(self.v, config.codepage)
             value.print_value()
         elif str(self.vtype) == 'wchar_t':
@@ -248,12 +239,8 @@ class GdbValue:
                 self.print_array(mod, depth, expr, pos, indent)
                 return
             else:
-                #print_pre(indent, self.pref, self.post, print_eq)
                 depth2 = mod.get_depth(expr, pos, depth)
-                #print_str("\n%d %d\n" % (depth, depth2))
-                #print_obj(mod)
                 if depth2 >= 0:
-                    #print_obj(value)
                     value.subtype = SubType.PTR
                     value.print_value()
                     self.target.print_v(name, depth2, expr, pos, False, False, indent, mod)
@@ -304,16 +291,16 @@ class GdbValue:
                     val_range.error = error_format(e)
                 
                 if len(ranges.range) > 1:
-                    print_str(indent + config.indent_pre)
+                    val_range.print_pre(indent + config.indent_pre)
 
                 val_range.print_value()
 
             i += 1
             if len(ranges.range) > 1:
                 if i == len(ranges.range):
-                    print_str("\n")
+                    value.print_endline()
                 else:
-                    print_str(",\n")
+                    value.print_endline(True)
 
         value.print_post(indent)
 
@@ -321,7 +308,6 @@ class GdbValue:
         if cp is None:
             cp_str = config.codepage
         else:
-                #cp_str = Transform.code_page[cp]
             cp_str = cp
 
         if null_b:
@@ -369,23 +355,22 @@ class GdbValue:
                     if config.verbose > 1:
                         val_range.str_len = s_l
 
-                    #print_str(" %s" % self.unicode_array_to_string(s, False if s_l is None else True))
                     val_range.value = self.unicode_array_to_string(s, False if s_l is None else True)
 
                 except Exception as e:
                     val_range.error = error_format(e)
                 
                 if len(ranges.range) > 1:
-                    print_str(indent + config.indent_pre)
+                    val_range.print_pre(indent + config.indent_pre)
 
                 val_range.print_value()
 
             i += 1
             if len(ranges.range) > 1:
                 if i == len(ranges.range):
-                    print_str("\n")
+                    value.print_endline()
                 else:
-                    print_str(",\n")
+                    value.print_endline(True, True)
 
         value.print_post(indent)
 
@@ -446,7 +431,6 @@ class GdbValue:
         else:
             value.value = str(velem.v)
             if config.out_type == OutType.TEXT and config.width > 1 and cwidth > 0:
-                #s = value.name + " = " + value.value + " %d %d %d" % (w, w * cwidth, config.width) + ","
                 s = value.name + " = " + value.value
                 if len(s) >= cwidth:
                     s = value.name + " = " + value.value
@@ -476,48 +460,20 @@ class GdbValue:
         pos = mod.get_filters(expr, pos)
         depth2 = mod.get_depth(expr, pos, depth)
 
-        cwidth = 0
-        if str(self.target.vtype) in ('char', 'signed char', 'unsigned char'):
-            num_type = 1
-        elif str(self.target.vtype) == 'wchar_t':
-            num_type = 2
-        else:
-            if self.target.vtype.code == gdb.TYPE_CODE_BOOL:
-                num_type = 0
-                cwidth = 6 + len(str(sys.maxint))
-            elif self.target.vtype.code == gdb.TYPE_CODE_INT:
-                num_type = 0
-                cwidth = 6 + len(str(sys.maxint))
-                #cwidth = 6 + len(str(sys.maxsize)) + len(str(sys.maxint))
-            elif self.target.vtype.code == gdb.TYPE_CODE_FLT:
-                num_type = 0
-                cwidth = 6 + len(str(sys.maxint))
-                #cwidth = 6 + len(str(sys.maxsize)) + len(str(float('-inf')))
-            else:
-                num_type = -1
+        (num_type, cwidth) = calc_cwidth(self.target.vtype)
         
-        #print_str("\n%d %d\n" % (cwidth, config.width))
-
         uchar = None
         for r in mod.ranges.range:
-            #if last > -1 and r[0] > last:
-            #    continue
-            #if last > -1 and r[1] > last:
-            #    end = last
-            #else:
-            #    end = r[1]
             (start, end) = calc_range(r[0], r[1], self.size)
             if start == -1:
                 continue
 
             n = start
-            #pi = 0
             if num_type == 1:
                 if cp_str == "utf-8":
                     uchar = bytearray()
             try:
                 w = 1
-                #action = None
                 if start <= end:
                     decr = 1
                 else:
@@ -537,28 +493,24 @@ class GdbValue:
                     action = filters_check(velem, mod.filters)
                     if action == Filter.SKIP:
                         n += decr
-                        #if i == end:
-                        #    print_str("\n")
                         continue
                     if num_type <> -1:
                         w = self.print_array_num_elem(velem, n, w, end, indent, num_type, cp_str, uchar, cwidth)
                     else:
-                        #print_str(indent + config.indent_pre + "[%d] " % i)
                         velem.print_v("[%d]" % n, depth2, expr, pos, True, True, indent + config.indent_pre)
-                        print_str(",\n")
+                        value.print_endline(True, True)
 
                     n += decr
 
                     if action == Filter.STOP:
-                        #print_str("\n")
                         break
 
                 if w > 1:
-                    print_str("\n")
+                    value.print_endline()
 
             except Exception as e:
                 if w == 1:
-                    print_str(indent + config.indent_pre)
+                    value.print_pre(indent + config.indent_pre)
 
                 value_err = ValueOut("[%s]" % n)
                 value_err.error = error_format(e)
@@ -567,13 +519,8 @@ class GdbValue:
         value.print_post(indent)
 
     def print_struct(self, depth, expr, pos, indent, mod):
-        #print_obj(mod)
         value = ValueOut()
         if not mod.transform is None and mod.transform.v == Transform.SIMPLE:
-            #if not self.pref is None and self.pref <> "" and print_eq:
-            #    print_str("%s%s = %s " % (indent, self.pref, self.post))
-            #else:
-            #    print_str(" %s " % self.pos)
             value.value = str(self.v)
             value.print_all(indent)
             return
@@ -588,9 +535,7 @@ class GdbValue:
                     obj = resolve_printer_typename("list")
         else:
             obj = None
-        #print_str(str(obj))
         if not obj is None:
-            #print_debug("\n" + str(self.vtype) + " " + str(obj) + "\n")
             try:
                 self.print_obj(obj, depth, expr, pos, indent, mod)
                 return
@@ -602,10 +547,6 @@ class GdbValue:
         self.print_fields(depth, expr, pos, indent, mod)
 
     def print_fields(self, depth, expr, pos, indent, mod):
-        #if not self.pref is None and self.pref <> "" and print_eq:
-        #    print_str("%s%s = %s" % (indent, self.pref, self.post))
-        #else:
-        #    print_str(" %s " % self.pos)
         pos = mod.get_struct(expr, pos)
         fields = self.v.type.fields()
         depth2 = mod.get_depth(expr, pos, depth)
@@ -652,9 +593,9 @@ class GdbValue:
 
             value_f.print_post()
             if i == len(fields):
-                print_str("\n")
+                value.print_endline()
             else:
-                print_str(",\n")
+                value.print_endline(True, True)
 
         value.print_post(indent)
 
@@ -685,7 +626,6 @@ class GdbValue:
                 value.desc = desc
                 value.print_value()
             self.target = GdbValue(ptr)
-            #print_pre(indent, self.pref, self.post, print_eq)
             depth2 = mod.get_depth(expr, pos, depth)
             if depth2 >= 0:
                 value = ValueOut()
@@ -694,16 +634,9 @@ class GdbValue:
                 self.target.print_v("ptr", depth2, expr, pos, False, True, indent, mod)
                 value.print_post()
         else:
-            #if not self.pref is None and self.pref <> "":
-            #    print_str("%s%s = %s " % (indent, self.pref, self.post))
-            #print_pre(indent, self.pref, self.post, print_eq)
             raise ValueError("unsupported display type %d" % obj_hint)
 
     def print_obj_arr(self, obj, depth, expr, pos, indent, mod):
-        #if not self.pref is None and self.pref <> "":
-        #    print_str("%s%s = %s" % (indent, self.pref, self.post))
-        #print_pre(indent, self.pref, self.post, print_eq)
-        #print_obj(mod)
         value = ValueOut()
         try:
             pos = mod.get_fetch(expr, pos, config.fetch_array)
@@ -767,46 +700,24 @@ class GdbValue:
                 action = filters_check(velem, mod.filters)
                 if action == Filter.SKIP:
                     n += decr
-                    #if n == end:
-                    #    print_str("\n")
                     continue
 
                 if self.target is None:
                     self.target = velem
-                    cwidth = 0
-                    if str(self.target.vtype) in ('char', 'signed char', 'unsigned char'):
-                        num_type = 1
-                    elif str(self.target.vtype) == 'wchar_t':
-                        num_type = 2
-                    else:
-                        if self.target.vtype.code == gdb.TYPE_CODE_BOOL:
-                            num_type = 0
-                            cwidth = 6 + len(str(sys.maxint))
-                        elif self.target.vtype.code == gdb.TYPE_CODE_INT:
-                            num_type = 0
-                            cwidth = 6 + len(str(sys.maxint))
-                            #cwidth = 6 + len(str(sys.maxsize)) + len(str(sys.maxint))
-                        elif self.target.vtype.code == gdb.TYPE_CODE_FLT:
-                            num_type = 0
-                            cwidth = 6 + len(str(sys.maxint))
-                            #cwidth = 6 + len(str(sys.maxsize)) + len(str(float('-inf')))
-                        else:
-                            num_type = -1
+                    (num_type, cwidth) = calc_cwidth(self.target.vtype)
              
                 if num_type >= 0:
                     w = self.print_array_num_elem(velem, n, w, end, indent, num_type, cp_str, uchar, cwidth)
                 else:
-                    #print_str(indent + config.indent_pre + "[%d] " % i)
                     velem.print_v("[%d]" % n, depth2, expr, pos, True, True, indent + config.indent_pre)
-                    print_str(",\n")
+                    value.print_endline(True, True)
 
                 n += decr
                 if action == Filter.STOP:
-                    #print_str("\n")
                     break
 
             if w > 1:
-                print_str("\n")
+                value.print_endline()
         
         value.print_post(indent)
 
@@ -873,8 +784,6 @@ class GdbValue:
                         action = filters_check(velem, mod.filters)
                         if action == Filter.SKIP:
                             n += decr
-                            #if n == end:
-                            #    print_str("\n")
                             continue
 
                         if so.is_unicode():
@@ -889,7 +798,6 @@ class GdbValue:
                                 if len(uchar) == 1:
                                     try:
                                         uchar.append(c)
-                                        #print(uchar.decode(cp))
                                         vchar = " " + cp_str + ":\"" + uchar.decode(cp_str) + "\""
                                         uchar = bytearray() 
                                     except:
@@ -902,7 +810,6 @@ class GdbValue:
                         value_f.print_all(indent + config.indent_pre, True, True)
 
                         if action == Filter.STOP:
-                            #print_str("\n")
                             break
                         n += decr
                     except Exception as e:
@@ -912,7 +819,7 @@ class GdbValue:
                         break
 
                     if w > 1:
-                        print_str("\n")
+                        value.print_endline()
 
             else:
                 value_f = ValueOut()
@@ -925,7 +832,7 @@ class GdbValue:
                         value_f.range = "[%d:%d]" % (start, end)
             
                     if start > end:
-                        value_f.value = "\"\""
+                        value_f.value = "None"
                     else:
                         (s, l,  s_l) = so.substring(start, end)
                         if so.is_unicode():
@@ -934,7 +841,7 @@ class GdbValue:
                             value_f.value = self.char_array_to_string(s, mod.cp, False)
 
                 if len(mod.ranges.range) > 1:
-                    print_str(indent + config.indent_pre)
+                    value_f.print_pre(indent + config.indent_pre)
                     value_f.print_all(indent + config.indent_pre, True, True)
                 else:
                     value_f.print_all(indent + config.indent_pre)
