@@ -1239,6 +1239,7 @@ class GdbVisitor:
         l = len(values)
         if values is None or l == 0:
             return
+        values.sort(key=lambda tup: tup[1])
         if is_global:
             ValueOut.print_section("global")
         else:

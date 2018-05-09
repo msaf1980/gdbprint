@@ -36,7 +36,10 @@ int main(int argc, char* argv[]) {
             {4, 5, 6}
         };
         int *ptr_null = NULL;
-        int **ptr_arr_2d = (int **) arr_2d;
+        int **ptr_arr_2d = NULL;
+        ptr_arr_2d = (int **) calloc(sizeof(int), 2);
+        ptr_arr_2d[0] = arr_2d[0];
+        ptr_arr_2d[1] = arr_2d[1];
         void *ptr_void_arr_2d = ptr_arr_2d;
 
 	bool b = true;
@@ -46,7 +49,7 @@ int main(int argc, char* argv[]) {
 	/* UTF-8 */
 	char *str = "Василий Пупкин Vasiliy Pupkin";
 	/* In cp1251 "Василий Vasiliy" */
-	char str_array[] = { (char) 194, (char) 224, (char) 241, (char) 232, (char) 235, (char) 232, (char) 233, (char) 32, 'V', 'a', 's', 'i', 'l', 'i', 'y', (char) 0 };
+	char str1251[] = { (char) 194, (char) 224, (char) 241, (char) 232, (char) 235, (char) 232, (char) 233, (char) 32, 'V', 'a', 's', 'i', 'l', 'i', 'y', (char) 0 };
 
         ub u;
         u.b[0] = 0;

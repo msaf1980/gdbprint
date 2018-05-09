@@ -324,9 +324,9 @@ class ValueOut:
     @staticmethod
     def print_section(s, indent = ""):
         if config.out_type == OutType.NAMED:
-            print_str("%sframe = \"%s\", values = { \n" % (indent, s))
+            print_str("%sframe = \"%s\", values = {\n" % (indent, s))
         else:
-            print_str("%sframe = \"%s\" { \n" % (indent, s))
+            print_str("%sframe = \"%s\" {\n" % (indent, s))
 
     @staticmethod
     def print_section_end(indent = ""):
@@ -493,8 +493,6 @@ class Expr:
         if self.v is None or len(self.v) == 0:
             return (FType(0, FType.NUM), 0)
 
-#raise ValueError("wrong argument type %d at pos %d" % (self.v[0].t, pos))
-
         pos = 0
         #spos = 0
         flist = []
@@ -536,15 +534,8 @@ class Expr:
             return (flist[0], pos)
         else:
             raise ValueError("incorrect expression: %s elements at the end" % len(flist))
-    #THIS = 2
-    #RANGE = 20
-    #FILTER = 21
-    #STRUCT = 22
-       
 
     def eval_print(self, visitor = None, name = None, depth = None):
-        #if config.debug:
-        #    print_obj(self)
         if depth is None:
             depth = config.depth
         value = ValueOut(name)
@@ -557,10 +548,6 @@ class Expr:
             value.error = error_format(e)
             value.print_value()
             value.print_post("", True)
-            #if not pname is None:
-            #    print_str("\"%s\" =" % pname)
-            #s = error_format(e)
-            #print_str(" %s\n" % s)
             return
 
 
@@ -807,7 +794,6 @@ class FilterItem:
 
 class Filter:
     t = FType.FILTER
-    #r_SPLIT = re.compile(r'([(||)(&&)])]')
 
     #Actions
     PASS = 0
@@ -898,14 +884,6 @@ class Oper:
     def eval(self, flist, visitor):
         if self.t in (FType.SUM, FType.MINUS, FType.MUL, FType.DIV):
             if len(flist) == 2:
-                #if flist[1].t == FType.NUM and flist[0].t == FType.NUM:
-                #    t = FType.NUM
-                #elif flist[1].t == FType.VAL and flist[0].t in (FType.NUM, FType.FLOAT, FType.VAL):
-                #    t = FType.VAL 
-                #elif flist[1].t == FType.NUM and flist[0].t == FType.VAL:
-                #    t = FType.VAL
-                #elif flist[1].t == FType.VAL and flist[0].t == FType.VAL:
-                #    t = FType.VAL
                 if not flist[0].t in (FType.NUM, FType.FLOAT, FType.VAL):
                     raise ValueError("not supported argument %s for %s" % (str(flist[0]), str(self)))
                 elif flist[0].t == flist[1].t:
@@ -980,7 +958,7 @@ class Struct:
             #    self.all = True
 
     def __str__(self):
-        s = ".( "
+        s = ".(( "
         s += ", ".join(x for x in self.fields)
         if len(self.hide_fields) > 0:
             if len(s) > 3:
@@ -990,7 +968,7 @@ class Struct:
             if len(s) > 3:
                 s += ", "
             s += ", ".join("*" + x for x in self.noderef_fields)
-        s += " )"
+        s += " ))"
         return s
 
 
@@ -1012,40 +990,7 @@ def operpos_init():
     op_c["+"] = Oper(FType.SUM)
     op_c["-"] = Oper(FType.MINUS)
 
-    #(Name, BlockDelim, )
-
-    #rop = dict(list)
-   
-    #rop["("].append((OperPlace.START, "(", 30))
-    #rop[")"].append((OperPlace.END, ")", 30))
-
-    #rop["["].append((OperPlace.START,"[", 20))
-    #rop["]"].append((OperPlace.END, "]", 20))
-    
-    #rop["{"].append((OperPlace.START, "{", 20))
-    #rop["}"].append((OperPlace.END, "}", 20))
-
     return (op_l, op_c, Oper(FType.CAST))
-
-#def operprio_init():
-#    d = dict()
-#    d["DEREF"].append(10)
-#    d["REF"].append(10)
-
-#    d["*"].append(5)
-#    d["+"].append(0)
-#    d["-"].append(0)
-    
-#    d["("].append((OperPlace.START, Oper.BRACKET_L, "(", 20))
-#    d[")"].append((OperPlace.END, Oper.BRACKET_R, ")", 20))
-
-#    d["["].append((OperPlace.START, Oper.RANGE_L, "[", 20))
-#    d["]"].append((OperPlace.END, Oper.RANGE_R, "]", 20))
-    
-#    d["{"].append((OperPlace.START, Oper.FILTER_L, "{", 20))
-#    d["}"].append((OperPlace.END, Oper.FILTER_R, "}", 20))
-
-#    return d
 
 
 # Parse format
@@ -1075,23 +1020,27 @@ class CommandParser:
         '(', ')', '[', ']', '{', '}', '?', '\'', '\\', '=', '_' ])
 
     def __init__(self):
-    #    self.pos = 0
-    #    self.start = 0
-    #    #s = re.split(r'(\W)', arg)
-    #    self.s = None
-    #    self.rpolish = None
         (self.oper_l, self.oper_c, self.oper_cast) = operpos_init()
               
     def parse(self, arg):
         tree = list()
-        for s in arg.split(";"):
-            lex = shlex.shlex(s)
-            s = list()
-            for l in lex:
+        lex = shlex.shlex(arg)
+        s = list()
+        for l in lex:
+            if l == ";":
+                if len(s) > 0:
+                    (e, pos, pname) = self.__parse_tree(s)
+                    tree.append((e, pname))
+                    s = list()
+            else:
                 s.append(l)
+
+        if len(s) > 0:
             (e, pos, pname) = self.__parse_tree(s)
             tree.append((e, pname))
+
         return tree
+
 #
 # @val arg  Tokenised string list to parse
 # @val pos  Position in string
@@ -1152,7 +1101,6 @@ class CommandParser:
                     raise ValueError("unhandled %s at %d" % (s[pos], pos))
                 break
             elif s[pos] == "[": 
-                #coper += self.flush(rp, stack)
                 spos = pos + 1
                 found = False
                 while pos < len(s):
@@ -1166,7 +1114,6 @@ class CommandParser:
                 else:
                     raise ValueError("unclosed [ at %d" % (spos - 1))
             elif s[pos] == "<": 
-                #coper += self.flush(rp, stack)
                 spos = pos + 1
                 found = False
                 while pos < len(s):
@@ -1192,7 +1139,6 @@ class CommandParser:
                     coper += self.flush(rp, stack)
                     rp.append(Filter("".join(s[spos:pos])))
                     end_expr = True
-                    #print(str(Filter("".join(s[spos:pos]))))
                 else:
                     raise ValueError("unclosed } at %d" % (spos - 1))
             elif s[pos] == "@": 
@@ -1227,20 +1173,16 @@ class CommandParser:
                 o = self.oper_c.get(s[pos])
                 if o is None:
                     if len(stack) == 0:
-                        #print_debug(str(s))
                         raise ValueError("too many arguments at pos %d (%s)" % (pos, s[pos]))
                     else:
-                        #print_debug(s[pos] + "\n")
                         spos = pos
                         (f, pos) = self.extract_float(s, pos)
                         if f is None:
                             rp.append(FType(s[pos]))
                         else:
-                            #print_debug("float " + str(f) + "\n", 2)
                             if pos > spos:
                                 del pname[-1]
                                 pname.append("".join(s[spos:pos+1]))
-                                #pname.append("%e" % f)
 
                             rp.append(FType(f, FType.FLOAT))
                     
@@ -1251,7 +1193,6 @@ class CommandParser:
                             rp.append(FType(cast, FType.CAST))
                             cast = None
                 else:
-                    #print(" ".join(str(x) for x in stack))
                     while len(stack) > 0 and o.pri <= stack[-1].pri:
                         o_f = stack.pop()
                         rp.append(o_f)
@@ -1263,8 +1204,6 @@ class CommandParser:
                         if end_expr:
                             raise ValueError("no operators allowed at pos %d (%s)" % (pos, s[pos]))
                         stack.append(o)
-                        #print(" ".join(str(x) for x in stack))
-                        #w_a = True
                     else:
                         raise ValueError("'%s' not allowed at pos %d" % (s[pos], pos))
             else: # First element
@@ -1276,17 +1215,14 @@ class CommandParser:
                     if f is None:
                         rp.append(FType(s[pos]))
                     else:
-                        #print_debug("float " + str(f) + "\n", 2)
                         if pos > spos:
                             del pname[-1]
                             pname.append("".join(s[spos:pos+1]))
-                            #pname.append("%e" % f)
 
                         rp.append(FType(f, FType.FLOAT))
                     
                     carg += 1
                     if not cast is None:
-                        #print(" ".join(str(x) for x in stack))
                         self.flush_pri_left(rp, stack, self.oper_cast)
                         rp.append(FType(cast, FType.CAST))
                         cast = None
@@ -1296,13 +1232,8 @@ class CommandParser:
                     if end_expr:
                         raise ValueError("no operators allowed at pos %d (%s)" % (pos, s[pos]))
                     stack.append(o)
-                    #print(" ".join(str(x) for x in stack))
-                    #w_a = True
                 else:
                     raise ValueError("'%s' not allowed at pos %d" % (s[pos], pos))
-
-
-            #elif len(f) == 2
 
             pos += 1
 
@@ -1327,7 +1258,6 @@ class CommandParser:
     r_N_E_N = re.compile(r'^\d+[eE]\d+$')
 
     def extract_float(self, s, pos):
-        #spos = pos
         try:
             if not self.r_N.match(s[pos]) is None and pos < len(s) - 2:
                 if s[pos + 1] == ".":
@@ -1346,7 +1276,6 @@ class CommandParser:
                 return (float(s[pos]), pos)
         except:
             pass
-            #print_debug(error_format(e))
 
         return (None, pos)
 
