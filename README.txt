@@ -2,6 +2,12 @@
 
 Package for browse data structuras with GDB python API
 
+Print local variables
+  p_l
+  
+Print global variables
+  p_g
+
 Print variable
   p_v EXRESSION
 
@@ -114,6 +120,8 @@ Filter example:
 Options:
 
 p_s [output_type | o] [text | named]                     Set output type
+							 test - test output
+							 named - named tag output (not fully tested)
 p_s [debug | d] [(1 | | y | on) | (0 | n | off) (N)]     Set debug level (0 - disable)
 p_s [fetch array | f a] SIZE                             Default fetch array size (by default 50)
 p_s [fetch string | f s] SIZE                            Default fetch string size (by default 400)
@@ -133,8 +141,8 @@ Usage:
 Add to .gdbinit gdbprint and custom printers packages
 
 py import gdbprint
-py import gdbprint_libstdcpp
 py import gdbprint_c
+py import gdbprint_libstdcpp
 
 
 
@@ -155,10 +163,10 @@ p_v argv<arr>[] @                    Print array elements (stop on null elements
 p_v str<utf8>[0:5]                   Print uft-8 substring
 p_v str<arr,utf8>[[0:5]              Print array elements (try to decode elements sequence as uft-8)
 
-Print linked list
+Print linked list (with installed gdbprint_c)
 p_v tNode_head <list> [-->next].((*next))
 p_v tNode_head <list> [0:1 -->next].((*next)) 
 
-Linked list from sys/queue.h
+Linked list from sys/queue.h (with installed gdbprint_c)
 p_v msghead.tqh_first <list> [ --> next.tqe_next ] .((!next))
-p_v msghead.tqh_first <list> [ --> next.tqe_next ] .((*next))
+p_v msghead.tqh_first <list> [ --> next.tqe_next ] .((*next)) 

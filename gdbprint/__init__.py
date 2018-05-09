@@ -4,7 +4,7 @@ import gdb
 import re
 import traceback
 
-from parser import CommandParser, Expr, tree_str
+from parser import CommandParser, Expr, ValueOut, tree_str
 import config
 from config import OutType
 
@@ -124,21 +124,22 @@ class CommandParserCmd(gdb.Command):
             print_str(str(e) + "\n")
 
     def invoke (self, arg, from_tty):
-        global gdb_var
         try:
             visitor = GdbVisitor()
             tree = cmd_parse.parse(arg)
-            if config.debug:
+            if config.debug > 0:
                 for t in tree:
                     print_str("%s\n" % tree_str(t[0]))
 
             i = 0
+            value = ValueOut()
             for t in tree:
                 e = Expr(t[0])
                 e.eval_print(visitor, t[1])
                 i += 1
                 if i < len(tree):
-                    print_str(",\n")
+                    if config.out_type <> OutType.TEXT:
+                        value.print_post("", True, True)
         except:
             if config.debug:
                 gdb.write(traceback.format_exc() + "\n")
@@ -158,11 +159,9 @@ class LocalCommand(gdb.Command):
             gdb.write(str(e) + "\n")
 
     def invoke (self, arg, from_tty):
-        global gdb_var
         try:
-            #gdb_var.frame_eval_and_print(False, arg)
-            cmd_parse = CommandParser()
-            cmd_parse.parse(arg)
+            visitor = GdbVisitor()
+            visitor.print_frame(False)
         except:
             if config.debug:
                 gdb.write(traceback.format_exc() + "\n")
@@ -181,14 +180,15 @@ class GlobalCommand(gdb.Command):
         except Exception as e:
             gdb.write(str(e) + "\n")
 
-    #def invoke (self, arg, from_tty):
-        #global gdb_var
-        #try:
-        #    gdb_var.frame_eval_and_print(True, arg)
-        #except:
-        #    if config.debug:
-        #        gdb.write(traceback.format_exc() + "\n")
-        #    raise
+    def invoke (self, arg, from_tty):
+        try:
+            visitor = GdbVisitor()
+            visitor.print_frame(True)
+        except:
+            if config.debug:
+                gdb.write(traceback.format_exc() + "\n")
+            raise
+
 
 cmd_parse = CommandParser()
 CommandParserSet()

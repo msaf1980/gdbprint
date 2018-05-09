@@ -149,137 +149,118 @@ class ValueOut:
         self.error = None
         self.range = None
         self.str_len = -1
-        self.length = -1
+        self.size = -1
         self.capacity = -1
         self.subtype = None
         self.desc = None
 
+    def print_str(self, s):
+        print_str(s)
+
+    def print_space(self):
+        self.print_str(" ")
+
     def print_pre(self, indent):
         print_str(indent)
 
-    def print_name(self, indent = ""):
+    def print_name(self, indent = "", space = True):
         if not self.name is None:
             if config.out_type == OutType.TEXT and self.name[0] == "[" and self.name[-1] == "]":
                 name = self.name
             else:
                 name = "\"%s\"" % self.name
             if config.out_type == OutType.NAMED:
-                if config.debug > 3:
-                    br = "N"
-                else:
-                    br = ""
-
-                print_str("%s{%s name = %s, " % (indent, br, name))
+                self.print_str("%s{ name = %s," % (indent, name))
             else:
-                print_str("%s%s = " % (indent, name))
+                self.print_str("%s%s =" % (indent, name))
 
-    def print_value(self, endline = False, comma = False):
+        if space: self.print_space()
+
+    def print_value(self, endline = False, comma = False, p_addr = False):
+        #print_obj(self)
+        out = list()
         if not self.typename is None and config.verbose > 0:
             if config.out_type == OutType.NAMED:
-                print_str("type = \"%s\", " % self.typename)
+                out.append("type = \"%s\"," % self.typename)
             else:
-                print_str("(%s) " % self.typename)
+                out.append("(%s)" % self.typename)
 
         if not self.address is None:
-            addr = "<0x%x>" % self.address
-            if config.out_type == OutType.NAMED:
-                print_str("addr = %s, " % addr)
-            else:
-                print_str("%s " % addr)
+            if self.address == 0 or config.verbose > 0 or p_addr or self.typename == "void *":
+                addr = "<0x%x>" % self.address
+                if config.out_type == OutType.NAMED:
+                    out.append("addr = %s," % addr)
+                else:
+                    out.append(addr)
+
             if self.address == 0:
+                self.print_str(" ".join(out))
                 return
 
+
+        if not self.desc is None and config.verbose > 1:
+            if config.out_type == OutType.NAMED:
+                out.append("desc = \"%s\"," % self.desc)
+            else:
+                out.append("desc:\"%s\"" % self.desc)
+ 
+        len_str = ""
         if config.verbose > 1:
             if not self.str_len is None and self.str_len <> -1:
                 if config.out_type == OutType.NAMED:
-                    print_str("str_len = %d, " % self.str_len)
+                    len_str += " str_len = %d," % self.str_len
                 else:
-                    print_str("str_len:%d " % self.str_len)
+                    len_str += " str_len:%d" % self.str_len
 
-            if not self.length is None and self.length <> -1:
+            if not self.size is None and self.size <> -1:
                 if config.out_type == OutType.NAMED:
-                    print_str("len = %d, " % self.length)
+                    len_str += " size = %d," % self.size
                 else:
-                    print_str("len:%d " % self.length)
+                    len_str += " size:%d" % self.size
 
             if not self.capacity is None and self.capacity <> -1:
                 if config.out_type == OutType.NAMED:
-                    print_str("capacity = %d, " % self.capacity)
+                    len_str += " capacity = %d," % self.capacity
                 else:
-                    print_str("capacity:%d " % self.capacity)
+                    len_str += " capacity:%d" % self.capacity
 
-        if not self.desc is None:
-            if config.out_type == OutType.NAMED:
-                print_str("desc = \"%s\", " % self.desc)
-            else:
-                print_str("%s " % self.desc)
-
+       
         if self.error is None and not self.subtype is None:
-            if self.subtype == SubType.MULTI:
-                if config.debug > 3:
-                    br = "M"
-                else:
-                    br = ""
-
-                if config.out_type == OutType.NAMED:
-                    print_str("value = {%s\n" % br)
-                else:
-                    print_str("{%s\n" % br)
-            elif self.subtype == SubType.PTR:
-                if config.debug > 3:
-                    br = "P"
-                else:
-                    br = ""
-
-                if config.out_type == OutType.NAMED:
-                    print_str("ptr = {%s " % br)
-                else:
-                    print_str("{%s ptr = " % br)
-
+            if len(len_str) > 0:
+                out.append(len_str[1:])
+            if len(out) > 0: self.print_str(" ".join(out))
+            self.print_subtype(False if config.verbose == 0 else True) 
             return
 
         if not self.range is None:
-            if config.debug > 3:
-                br = "R"
-            else:
-                br = ""
-
             if config.out_type == OutType.NAMED:
-                print_str("range = {%s name = \"%s\", " % (br, self.range))
+                out.append("range = {%s name = \"%s\"," % (len_str, self.range))
             else:
-                print_str("{%s %s = " % (br, self.range))
-
-        #if not self.key is None:
-        #    if config.out_type == OutType.NAMED:
-        #        print_str("key = \"%s\", " % self.key)
-        #    else:
-        #        print_str("{ %s } => " % self.key)
+                out.append("{%s %s =" % (len_str, self.range))
+        elif len(len_str) > 0:
+            out.append(len_str[1:])
 
         if not self.error is None:
             if config.out_type == OutType.NAMED:
-                print_str("error = \"%s\"" % self.error)
+                out.append("error = \"%s\"" % self.error)
             else:
-                print_str("error:\"%s\"" % self.error)
+                out.append("error:\"%s\"" % self.error)
         elif not self.value is None:
             if config.out_type == OutType.NAMED:
                 v = self.value.replace("\"", "\\\"")
-                print_str("value = \"%s\"" % v)
+                out.append("value = \"%s\"" % v)
             else:
-                print_str(self.value)
+                out.append(self.value)
         elif not self.range is None:
             if config.out_type == OutType.NAMED:
-                print_str("value = None")
+                out.append("value = None")
             else:
-                print_str("None")
+                out.append("None")
  
         if not self.range is None:
-            if config.debug > 3:
-                br = "R"
-            else:
-                br = ""
+            out.append("}")
 
-            print_str(" }%s" % br)
-
+        self.print_str(" ".join(out))
         self.print_endline(endline, comma)
 
     def print_endline(self, endline = True, comma = False):
@@ -292,34 +273,34 @@ class ValueOut:
         if endline or comma:
             print_str(addstr)
 
+
+    def print_subtype(self, space = False):
+        if self.error is None and not self.subtype is None:
+            if space: self.print_space()
+            if self.subtype == SubType.MULTI:
+                if config.out_type == OutType.NAMED:
+                    self.print_str("value = {\n")
+                else:
+                    self.print_str("{\n")
+            elif self.subtype == SubType.PTR:
+                if config.out_type == OutType.NAMED:
+                    self.print_str("ptr = { ")
+                else:
+                    self.print_str("{ ptr = ")
+
     def print_post(self, indent = "", endline = False, comma = False, end = False):
         if self.subtype == SubType.MULTI and self.error is None:
-            if config.out_type == OutType.NAMED and config.debug > 3:
-                br = "M"
-            else:
-                br = ""
-
-            print_str("%s}%s" % (indent, br))
+            print_str("%s}" % indent)
         elif self.subtype == SubType.PTR and self.error is None:
-            if config.out_type == OutType.NAMED and config.debug > 3:
-                br = "P"
-            else:
-                br = ""
-
-            print_str(" }%s" % br)
+            print_str(" }")
 
         if (end or not self.name is None) and config.out_type == OutType.NAMED:
-            if config.debug > 3:
-                br = "N"
-            else:
-                br = ""
-
-            print_str(" }%s" % br)
+            print_str(" }")
 
         self.print_endline(endline, comma)
 
     def print_all(self, indent = "", endline = False, comma = False):
-        self.print_name(indent)
+        self.print_name(indent, True)
         self.print_value()
         self.print_post(indent, endline, comma)
 
@@ -339,6 +320,18 @@ class ValueOut:
             print_str(" } => ")
         else:
             print_str(" }")
+
+    @staticmethod
+    def print_section(s, indent = ""):
+        if config.out_type == OutType.NAMED:
+            print_str("%sframe = \"%s\", values = { \n" % (indent, s))
+        else:
+            print_str("%sframe = \"%s\" { \n" % (indent, s))
+
+    @staticmethod
+    def print_section_end(indent = ""):
+            print_str("%s}\n" % indent)
+
 
 class OperLoc:
     NONE = 0 # No Location
@@ -360,10 +353,11 @@ class FType:
     ERR = 5 # Debugger error
 
     NUM = 10 # Integer number
-    r_NUM = re.compile(r'^\d+$')
+    r_NUM = re.compile(r'^-?\d+$')
 
     FLOAT = 11 # Float number
-    r_FLOAT = re.compile(r'^\d+\.\d+(e-?\d+)?$')
+    #r_FLOAT = re.compile(r'^-?\d+(.\d+)?$')
+    r_FLOAT = re.compile(r'^-?\d+(.\d+)?(e-?\d+)?$')
 
     ADDR = 12
     r_ADDR = re.compile(r'^(0x[0-9a-fA-F]+)$')
@@ -390,7 +384,7 @@ class FType:
             self.t = FType.NONE
             self.v = None
             #if self.t_NUM(s) or self.t_FLOAT(s) or self.t_NAME(s):
-            if self.t_NUM(s) or self.t_NAME(s) or self.t_ADDR(s):
+            if self.t_NUM(s) or self.t_FLOAT(s) or self.t_NAME(s) or self.t_ADDR(s):
                 return
             else:
                 raise ValueError("field format error: %s" % s)
@@ -408,13 +402,14 @@ class FType:
             self.t = FType.NUM
             return True
 
-    #def t_FLOAT(self, s):
-    #    if FType.r_FLOAT.match(s) is None:
-    #        return False
-    #    else:
-    #        self.v = float(s)
-    #        self.t = FType.FLOAT
-    #        return True
+    def t_FLOAT(self, s):
+        if FType.r_FLOAT.match(s) is None:
+            return False
+        else:
+            self.v = float(s)
+            self.t = FType.FLOAT
+            #self.name = "%e" % self.v
+            return True
 
     def t_NAME(self, s):
         if FType.r_NAME.match(s) is None:
@@ -437,6 +432,8 @@ class FType:
             return "NAME(%s)" % self.v
         elif self.t == FType.NUM:
             return "NUM(%d)" % self.v
+        elif self.t == FType.FLOAT:
+            return "FLOAT(%e)" % self.v
         elif self.t == FType.CAST:
             return "CAST(%s)" % self.v
         elif self.t == FType.THIS:
@@ -476,7 +473,7 @@ class FType:
             if visitor is None:
                 raise ValueError("no visitor set for type %d" % self.t)
             return (visitor.from_addr(self.v), 0)
-        elif self.t == FType.NUM:
+        elif self.t in (FType.NUM, FType.FLOAT):
             return (self, 0)
         else:
             raise ValueError("no eval method for type %d" % self.t)
@@ -502,7 +499,7 @@ class Expr:
         #spos = 0
         flist = []
         while pos < len(self.v):
-            if self.v[pos].t in [ FType.NUM, FType.NAME, FType.EXPR ]:
+            if self.v[pos].t in [ FType.NUM, FType.FLOAT, FType.NAME, FType.EXPR ]:
                 v = self.v[pos].eval(visitor)
                 flist.append(v[0])
             elif self.v[pos].t in [ FType.NEG, FType.SUM, FType.MINUS, FType.DIV, FType.MUL ]:
@@ -901,19 +898,28 @@ class Oper:
     def eval(self, flist, visitor):
         if self.t in (FType.SUM, FType.MINUS, FType.MUL, FType.DIV):
             if len(flist) == 2:
-                t = None
-                if flist[1].t == FType.NUM and flist[0].t == FType.NUM:
-                    t = FType.NUM
-                elif flist[1].t == FType.VAL and (flist[0].t == FType.NUM or flist[0].t == FType.VAL):
-                    t = FType.VAL 
-                elif flist[1].t == FType.NUM and flist[0].t == FType.VAL:
+                #if flist[1].t == FType.NUM and flist[0].t == FType.NUM:
+                #    t = FType.NUM
+                #elif flist[1].t == FType.VAL and flist[0].t in (FType.NUM, FType.FLOAT, FType.VAL):
+                #    t = FType.VAL 
+                #elif flist[1].t == FType.NUM and flist[0].t == FType.VAL:
+                #    t = FType.VAL
+                #elif flist[1].t == FType.VAL and flist[0].t == FType.VAL:
+                #    t = FType.VAL
+                if not flist[0].t in (FType.NUM, FType.FLOAT, FType.VAL):
+                    raise ValueError("not supported argument %s for %s" % (str(flist[0]), str(self)))
+                elif flist[0].t == flist[1].t:
+                    t = flist[0].t
+                elif flist[1].t == FType.NUM:
+                    t = flist[0].t
+                elif flist[1].t == FType.VAL:
                     t = FType.VAL
-                elif flist[1].t == FType.VAL and flist[0].t == FType.VAL:
-                    t = FType.VAL
+                elif flist[0].t == FType.FLOAT and flist[1].t == FType.NUM:
+                    t = FType.FLOAT
                 else:
                     raise ValueError("not supported combination of arguments %s and %s for %s" % (str(flist[0]), str(flist[1]), str(self)))
 
-                if t == FType.NUM:
+                if t in (FType.NUM, FType.FLOAT):
                     if self.t == FType.SUM:
                         v = flist[0].v + flist[1].v
                     elif self.t == FType.MINUS:
@@ -1105,8 +1111,8 @@ class CommandParser:
 
         pname = list()
 
-        #print(s)
-        
+        print_debug(str(s), 2)
+
         while pos < len(s):
             if s[pos] == "(":
                 is_cast = False
@@ -1221,10 +1227,23 @@ class CommandParser:
                 o = self.oper_c.get(s[pos])
                 if o is None:
                     if len(stack) == 0:
-                        print_debug(str(s))
+                        #print_debug(str(s))
                         raise ValueError("too many arguments at pos %d (%s)" % (pos, s[pos]))
                     else:
-                        rp.append(FType(s[pos]))
+                        #print_debug(s[pos] + "\n")
+                        spos = pos
+                        (f, pos) = self.extract_float(s, pos)
+                        if f is None:
+                            rp.append(FType(s[pos]))
+                        else:
+                            #print_debug("float " + str(f) + "\n", 2)
+                            if pos > spos:
+                                del pname[-1]
+                                pname.append("".join(s[spos:pos+1]))
+                                #pname.append("%e" % f)
+
+                            rp.append(FType(f, FType.FLOAT))
+                    
                         carg += 1
                         if not cast is None:
                             #print(" ".join(str(x) for x in stack))
@@ -1252,7 +1271,19 @@ class CommandParser:
                 pname.append(s[pos])
                 o = self.oper_l.get(s[pos])
                 if o is None:
-                    rp.append(FType(s[pos]))
+                    spos = pos
+                    (f, pos) = self.extract_float(s, pos)
+                    if f is None:
+                        rp.append(FType(s[pos]))
+                    else:
+                        #print_debug("float " + str(f) + "\n", 2)
+                        if pos > spos:
+                            del pname[-1]
+                            pname.append("".join(s[spos:pos+1]))
+                            #pname.append("%e" % f)
+
+                        rp.append(FType(f, FType.FLOAT))
+                    
                     carg += 1
                     if not cast is None:
                         #print(" ".join(str(x) for x in stack))
@@ -1276,26 +1307,48 @@ class CommandParser:
             pos += 1
 
         if sub and (pos == len(s) or s[pos] != ")"):
-            #print("end" if pos == len(s) else s[pos])
             raise ValueError("unclosed ( at %d" % (spos - 1))
-
-
-        #print(" ".join(str(x) for x in stack))
 
         if not cast is None:
             self.flush_pri_left(rp, stack, self.oper_cast)
             rp.append(FType(cast, FType.CAST))
             cast = None
-
         
         coper += self.flush(rp, stack)
 
-        #print ("%d %d" % (carg, coper))
         if coper != carg - 1:
             raise ValueError("incomplete operation (%d/%d)" % (coper, carg))
-        #self.flush(rp, stack, f)
 
         return (rp, pos, " ".join(pname))
+
+
+    r_N = re.compile(r'^\d+$')
+    r_N_E = re.compile(r'^\d+[eE]$')
+    r_N_E_N = re.compile(r'^\d+[eE]\d+$')
+
+    def extract_float(self, s, pos):
+        #spos = pos
+        try:
+            if not self.r_N.match(s[pos]) is None and pos < len(s) - 2:
+                if s[pos + 1] == ".":
+                    if not self.r_N.match(s[pos + 2]) is None or not self.r_N_E_N.match(s[pos + 2]) is None: 
+                        fstr = s[pos] + s[pos + 1] + s[pos + 2]
+                        return (float(fstr), pos + 2)
+                    elif not self.r_N_E.match(s[pos + 2]) is None and s[pos + 3] in ("-", "+") \
+                            and not self.r_N.match(s[pos + 4]) is None:
+                        fstr = s[pos] + s[pos + 1] + s[pos + 2] + s[pos + 3] + s[pos + 4]
+                        return (float(fstr), pos + 4)
+            elif not self.r_N_E.match(s[pos]) is None:
+                if s[pos + 1] in ("-", "+") and not self.r_N.match(s[pos + 2]) is None:
+                    fstr = s[pos] + s[pos + 1] + s[pos + 2]
+                    return (float(fstr), pos + 2)
+            elif not self.r_N_E_N.match(s[pos]) is None:
+                return (float(s[pos]), pos)
+        except:
+            pass
+            #print_debug(error_format(e))
+
+        return (None, pos)
 
     def flush_pri_left(self, rp, stack, o):
         while len(stack) > 0 and o.pri <= stack[-1].pri and stack[-1].loc == OperLoc.LEFT:

@@ -139,7 +139,7 @@ def error_format(e):
     return s
 
 def print_debug(s, level = 1):
-    if config.debug >= level and not s is None:
+    if level <= config.debug and not s is None:
 	print_str(s)
 	print_str("\n")
 
