@@ -1,6 +1,7 @@
 build
 dist
 gdbprint*.egg-info
+__pycache__
 *.pyc
 .*.swp
 test

@@ -1,5 +1,9 @@
+import sys
 import gdb
-import config
+if sys.version_info < (3, 0, 0):
+    import printcfg
+else:
+    from . import printcfg
 
 def print_str(s):
     gdb.write(s)
@@ -92,9 +96,14 @@ def char_to_string(nvalue, cp = None):
     c = char_unsign(nvalue)
     if c == 0:
         return str(c) + " \"0x0\""
-    else:
-        if not cp is None and cp <> "utf-8":
+    elif sys.version_info < (3, 0, 0):
+        if not cp is None and cp != "utf-8":
             return str(c) + " \"" + chr(c).decode(cp) + "\""
         else:
-            return str(c) + " \"" + chr(c).decode(config.codepage_failback) + "\""
+            return str(c) + " \"" + chr(c).decode(printcfg.codepage_failback) + "\""
+    else:
+        if not cp is None and cp != "utf-8":
+            return str(c) + " \"" + c.to_bytes(1, byteorder='big').decode(cp) + "\""
+        else:
+            return str(c) + " \"" + c.to_bytes(1, byteorder='big').decode(printcfg.codepage_failback) + "\""
 

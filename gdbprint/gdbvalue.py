@@ -1,31 +1,26 @@
 import sys
 import gdb
-import gdbutils
 import re
 import traceback
-import config
-from config import OutType
-from gdbutils import print_str
-from gdbutils import char_to_string
-from utils import print_debug
-from utils import error_format
-from gdbprinters import read_string
-from gdbprinters import read_unicode
-from gdbprinters import short_name, p_name
-from utils import DisplayType
-from gdbutils import char_unsign
-from gdbutils import typename
-from utils import print_debug, print_warn, print_error, print_obj
-from utils import resolve_printer, resolve_printer_typename
-from parser import filters_check
-from parser import calc_range
-from parser import Filter
-from parser import CmpVal
-from parser import FType
-from parser import Transform
-from parser import Range
-from parser import Mod
-from parser import ValueOut, SubType
+if sys.version_info < (3, 0, 0):
+    import gdbutils
+    import printcfg
+else:
+    from . import gdbutils
+    from . import printcfg
+from .define import longx
+from .printcfg import OutType
+from .gdbutils import print_str
+from .gdbutils import char_to_string, char_unsign, typename
+from .utils import print_debug, error_format
+from .gdbprinters import read_string, read_unicode
+from .gdbprinters import short_name, p_name
+from .utils import DisplayType
+from .utils import print_debug, print_warn, print_error, print_obj
+from .utils import resolve_printer, resolve_printer_typename
+from .parser import filters_check
+from .parser import calc_range
+from .parser import Filter, CmpVal, FType, Transform, Range, Mod, ValueOut, SubType
 
 def calc_cwidth(vtype):
     cwidth = 0
@@ -36,14 +31,14 @@ def calc_cwidth(vtype):
     else:
         if vtype.code == gdb.TYPE_CODE_BOOL:
             num_type = 0
-            cwidth = 6 + len(str(sys.maxint))
+            cwidth = 6 + len(str(sys.maxsize))
         elif vtype.code == gdb.TYPE_CODE_INT:
             num_type = 0
-            cwidth = 6 + len(str(sys.maxint))
+            cwidth = 6 + len(str(sys.maxsize))
             #cwidth = 6 + len(str(sys.maxsize)) + len(str(sys.maxint))
         elif vtype.code == gdb.TYPE_CODE_FLT:
             num_type = 0
-            cwidth = 6 + len(str(sys.maxint))
+            cwidth = 6 + len(str(sys.maxsize))
         else:
             num_type = -1
 
@@ -74,12 +69,12 @@ class GdbValue:
                     elif self.vtype.code == gdb.TYPE_CODE_FLT:
                         v = float(self.v)
                     else:
-                        v = long(self.v)
+                        v = longx(self.v)
                     if fi.cmp_v == CmpVal.EQ:
                         if v == fi.c2.v:
                             return action
                     elif fi.cmp_v == CmpVal.NE:
-                        if v <> fi.c2.v:
+                        if v != fi.c2.v:
                             return action
                     elif fi.cmp_v == CmpVal.GT:
                         if v > fi.c2.v:
@@ -137,7 +132,7 @@ class GdbValue:
                     c -= 1
             return GdbValue(self.v.cast(cast_t))
         except Exception as e:
-            if config.debug:
+            if printcfg.debug:
                 raise ValueError("<unresolve to '" + cast + "': " + traceback.format_exc() + ">")
             else:
                 raise ValueError("<unresolve to '" + cast + "': " + str(e) + ">")
@@ -151,7 +146,7 @@ class GdbValue:
 
         try:
             if print_head or str(self.vtype) == "void *":
-                if config.verbose > 2:
+                if printcfg.verbose > 2:
                     self.value.typename = str(self.vtype)
                 else:
                     self.value.typename = p_name(str(self.vtype))
@@ -181,7 +176,7 @@ class GdbValue:
                 self.print_struct(depth, expr, pos, indent, mod)
                 return
             elif str(self.vtype) in ('char', 'signed char', 'unsigned char'):
-                self.value.value = char_to_string(self.v, config.codepage)
+                self.value.value = char_to_string(self.v, printcfg.codepage)
                 self.value.print_value()
             elif str(self.vtype) == 'wchar_t':
                 self.value.value = str(self.v)
@@ -194,7 +189,7 @@ class GdbValue:
                 return
             elif self.vtype.code in (gdb.TYPE_CODE_ARRAY, gdb.TYPE_CODE_PTR):
                 if self.vtype.code == gdb.TYPE_CODE_PTR:
-                    self.value.address = long(self.v)
+                    self.value.address = longx(self.v)
                     if self.value.address == 0 or str(self.vtype) == "void *":
                         self.value.print_value()
                         self.value.print_post()
@@ -219,11 +214,11 @@ class GdbValue:
                     self.size = -1
 
                 if mod.transform.v == Transform.STR:
-                    pos = mod.get_fetch(expr, pos, config.fetch_string)
+                    pos = mod.get_fetch(expr, pos, printcfg.fetch_string)
                     self.print_cstr(mod.ranges, mod.cp, indent)
                     return
                 elif mod.transform.v == Transform.UNICODE:
-                    pos = mod.get_fetch(expr, pos, config.fetch_string)
+                    pos = mod.get_fetch(expr, pos, printcfg.fetch_string)
                     self.print_unicode(mod.ranges, indent)
                     return
                 elif mod.transform.v == Transform.ARRAY:
@@ -260,7 +255,7 @@ class GdbValue:
         if len(ranges.range) > 1:
             self.value.subtype = SubType.MULTI
 
-        cp_str = config.codepage if cp is None else cp
+        cp_str = printcfg.codepage if cp is None else cp
         self.value.print_value()
 
         for r in ranges.range:
@@ -281,7 +276,7 @@ class GdbValue:
 
                 try: 
                     (s, l,  s_l) = read_string(self.v, start, end)
-                    if config.verbose > 1:
+                    if printcfg.verbose > 1:
                         val_range.str_len = s_l
                     val_range.value = self.char_array_to_string(s, cp_str, False if s_l is None else True)
 
@@ -289,8 +284,8 @@ class GdbValue:
                     val_range.error = error_format(e)
                
                 if len(ranges.range) > 1:
-                    val_range.print_pre(indent + config.indent_pre)
-                elif config.verbose > 0:
+                    val_range.print_pre(indent + printcfg.indent_pre)
+                elif printcfg.verbose > 0:
                     val_range.print_space()
 
                 val_range.print_value()
@@ -306,7 +301,7 @@ class GdbValue:
 
     def char_array_to_string(self, char_array, cp, null_b = False):
         if cp is None:
-            cp_str = config.codepage
+            cp_str = printcfg.codepage
         else:
             cp_str = cp
 
@@ -321,8 +316,8 @@ class GdbValue:
                 result += cp_str + ":"
             result += '\"' + s_decode + '\"' + null_end
         except UnicodeDecodeError:
-            result = config.codepage_failback + ":"
-            s_decode = char_array.decode(config.codepage_failback)
+            result = printcfg.codepage_failback + ":"
+            s_decode = char_array.decode(printcfg.codepage_failback)
             result += '\"' + s_decode + '\"' + null_end
 
         return result
@@ -352,7 +347,7 @@ class GdbValue:
 
                 try: 
                     (s, l,  s_l) = read_unicode(self.v, start, end)
-                    if config.verbose > 1:
+                    if printcfg.verbose > 1:
                         val_range.str_len = s_l
 
                     val_range.value = self.unicode_array_to_string(s, False if s_l is None else True)
@@ -361,8 +356,8 @@ class GdbValue:
                     val_range.error = error_format(e)
                 
                 if len(ranges.range) > 1:
-                    val_range.print_pre(indent + config.indent_pre)
-                elif config.verbose > 0:
+                    val_range.print_pre(indent + printcfg.indent_pre)
+                elif printcfg.verbose > 0:
                     val_range.print_space()
 
                 val_range.print_value()
@@ -391,12 +386,12 @@ class GdbValue:
         try:
             kelem = GdbValue(k)
             ValueOut.print_prekv(True)
-            kelem.print_v("key", 1, None, -1, False, True, indent + config.indent_pre)
+            kelem.print_v("key", 1, None, -1, False, True, indent + printcfg.indent_pre)
             ValueOut.print_postkv(True)
 
             velem = GdbValue(v)
             ValueOut.print_prekv()
-            velem.print_v("value", depth, expr, pos, False, True, indent + config.indent_pre)
+            velem.print_v("value", depth, expr, pos, False, True, indent + printcfg.indent_pre)
             ValueOut.print_postkv()
             value.print_post("", True, True) 
         except Exception as e:
@@ -426,28 +421,28 @@ class GdbValue:
                     vchar = ""
 
             value.value = char_to_string(velem.v, cp) + vchar
-            value.print_all(indent + config.indent_pre, True, True)
+            value.print_all(indent + printcfg.indent_pre, True, True)
         elif char_type == 2:
             value.value = str(velem.v)
-            value.print_all(indent + config.indent_pre, True, True)
+            value.print_all(indent + printcfg.indent_pre, True, True)
         else:
             value.value = str(velem.v)
-            if config.out_type == OutType.TEXT and config.width > 1 and cwidth > 0:
+            if printcfg.out_type == OutType.TEXT and printcfg.width > 1 and cwidth > 0:
                 s = value.name + " = " + value.value
                 if len(s) >= cwidth:
                     s = value.name + " = " + value.value
                 #cwidth = 6 + len(
                 if w == 1:
-                    print_str(indent + config.indent_pre + s.ljust(cwidth) + ", ")
+                    print_str(indent + printcfg.indent_pre + s.ljust(cwidth) + ", ")
                     w += 1
-                elif config.width > w * cwidth:
+                elif printcfg.width > w * cwidth:
                     print_str(s.ljust(cwidth) + ", ")
                     w += 1
                 else:
                     print_str("%s,\n" % s.ljust(cwidth))
                     w = 1
             else:
-                value.print_all(indent + config.indent_pre, True, True)
+                value.print_all(indent + printcfg.indent_pre, True, True)
 
         return w
             
@@ -456,9 +451,9 @@ class GdbValue:
         self.value.subtype = SubType.MULTI
         self.value.print_value()
 
-        cp_str = config.codepage if mod.cp is None else mod.cp
+        cp_str = printcfg.codepage if mod.cp is None else mod.cp
 
-        pos = mod.get_fetch(expr, pos, config.fetch_array)
+        pos = mod.get_fetch(expr, pos, printcfg.fetch_array)
         pos = mod.get_filters(expr, pos)
         depth2 = mod.get_depth(expr, pos, depth)
 
@@ -496,10 +491,10 @@ class GdbValue:
                     if action == Filter.SKIP:
                         n += decr
                         continue
-                    if num_type <> -1:
+                    if num_type != -1:
                         w = self.print_array_num_elem(velem, n, w, end, indent, num_type, cp_str, uchar, cwidth)
                     else:
-                        velem.print_v("[%d]" % n, depth2, expr, pos, True, True, indent + config.indent_pre)
+                        velem.print_v("[%d]" % n, depth2, expr, pos, True, True, indent + printcfg.indent_pre)
                         self.value.print_endline(True, True)
 
                     n += decr
@@ -515,7 +510,7 @@ class GdbValue:
                 if w > 1:
                     value_err.print_endline()
                 value_err.error = error_format(e)
-                value_err.print_all(indent + config.indent_pre, True, True)
+                value_err.print_all(indent + printcfg.indent_pre, True, True)
 
         self.value.print_post(indent)
 
@@ -571,14 +566,14 @@ class GdbValue:
                 cast = mod.sw.cast_fields.get(f.name)
             
             value_f = ValueOut(f.name)
-            value_f.print_name(indent + config.indent_pre)
+            value_f.print_name(indent + printcfg.indent_pre)
             try:
                 if cast is None:
                     felem = GdbValue(self.v[f.name])
                 else:
                     felem = GdbValue(self.v[f.name]).cast(cast)
 
-                felem.print_v(f.name, depth3, expr, pos, False, True, indent + config.indent_pre)
+                felem.print_v(f.name, depth3, expr, pos, False, True, indent + printcfg.indent_pre)
             except Exception as e:
                 s = str(e)
                 if s.find("There is no member or method named") >= 0:
@@ -588,7 +583,7 @@ class GdbValue:
                 if s.find("cannot resolve overloaded method") >= 0:
                     continue
                 value_f.error = error_format(e)
-                value_f.print_all(indent + config.indent_pre)
+                value_f.print_all(indent + printcfg.indent_pre)
 
             value_f.print_post()
             if i == len(fields):
@@ -640,7 +635,7 @@ class GdbValue:
 
     def print_obj_arr(self, obj, depth, expr, pos, indent, mod):
         try:
-            pos = mod.get_fetch(expr, pos, config.fetch_array)
+            pos = mod.get_fetch(expr, pos, printcfg.fetch_array)
             pos = mod.get_filters(expr, pos)
             if mod.ranges is None:
                 next_v = None
@@ -649,7 +644,7 @@ class GdbValue:
 
             ao = obj(self.v, self.v.type, next = next_v)
             (self.value.size, self.value.capacity) = ao.size()
-            cp_str = config.codepage if mod.cp is None else mod.cp
+            cp_str = printcfg.codepage if mod.cp is None else mod.cp
             depth2 = mod.get_depth(expr, pos, depth)
         except Exception as e:
             value_err = ValueOut()
@@ -698,13 +693,13 @@ class GdbValue:
                 except Exception as e:
                     value_err = ValueOut("[%d]" % n)
                     value_err.error = error_format(e)
-                    value.print_all(indent + config.indent_pre, True)
+                    value.print_all(indent + printcfg.indent_pre, True)
                     break
             
                 if num_type >= 0:
                     w = self.print_array_num_elem(velem, n, w, end, indent, num_type, cp_str, uchar, cwidth)
                 else:
-                    velem.print_v("[%d]" % n, depth2, expr, pos, True, True, indent + config.indent_pre)
+                    velem.print_v("[%d]" % n, depth2, expr, pos, True, True, indent + printcfg.indent_pre)
                     self.value.print_endline(True, True)
 
                 n += decr
@@ -718,9 +713,9 @@ class GdbValue:
 
     def print_obj_str(self, obj, expr, pos, indent, mod, print_eq = True):
         if mod.transform.v == Transform.ARRAY:
-            default_fetch = config.fetch_array
+            default_fetch = printcfg.fetch_array
         else:
-            default_fetch = config.fetch_string
+            default_fetch = printcfg.fetch_string
 
         try:
             pos = mod.get_fetch(expr, pos, default_fetch)
@@ -730,7 +725,7 @@ class GdbValue:
             else:
                 next_v = mod.ranges.next_v
 
-            cp_str = config.codepage if mod.cp is None else mod.cp
+            cp_str = printcfg.codepage if mod.cp is None else mod.cp
             so = obj(self.v, self.v.type, next = next_v)
             (self.value.str_len, self.value.capacity) = so.size()
         except Exception as e:
@@ -796,14 +791,14 @@ class GdbValue:
 
                             value_f.value = char_to_string(c, cp_str) + vchar
 
-                        value_f.print_all(indent + config.indent_pre, True, True)
+                        value_f.print_all(indent + printcfg.indent_pre, True, True)
 
                         if action == Filter.STOP:
                             break
                         n += decr
                     except Exception as e:
                         value_f.error = error_format(e)
-                        value_f.print_all(indent + config.indent_pre, True, True)
+                        value_f.print_all(indent + printcfg.indent_pre, True, True)
                         w = 1
                         break
 
@@ -830,10 +825,10 @@ class GdbValue:
                             value_f.value = self.char_array_to_string(s, mod.cp, False)
 
                 if len(mod.ranges.range) > 1:
-                    value_f.print_pre(indent + config.indent_pre)
-                    value_f.print_all(indent + config.indent_pre, True, True)
+                    value_f.print_pre(indent + printcfg.indent_pre)
+                    value_f.print_all(indent + printcfg.indent_pre, True, True)
                 else:
-                    value_f.print_all(indent + config.indent_pre)
+                    value_f.print_all(indent + printcfg.indent_pre)
     
             i += 1
 
@@ -843,7 +838,7 @@ class GdbValue:
     def print_obj_list(self, obj, depth, expr, pos, indent, mod):
         #print_obj(mod)
         try:
-            pos = mod.get_fetch(expr, pos, config.fetch_array)
+            pos = mod.get_fetch(expr, pos, printcfg.fetch_array)
             pos = mod.get_filters(expr, pos)
             if mod.ranges is None:
                 next_v = None
@@ -873,7 +868,7 @@ class GdbValue:
 
             while lo.get_pos() <= end:
                 value_f = ValueOut("[%d]" % lo.get_pos())
-                value_f.print_name(indent + config.indent_pre)
+                value_f.print_name(indent + printcfg.indent_pre)
                 try:
                     (n,  elem) = lo.next()
                     if n < start:
@@ -884,17 +879,17 @@ class GdbValue:
                     if action == Filter.SKIP:
                         continue
 
-                    velem.print_v(value_f.name, depth2, expr, pos, False, True, indent + config.indent_pre)
+                    velem.print_v(value_f.name, depth2, expr, pos, False, True, indent + printcfg.indent_pre)
                     value_f.print_post("", True, True)
                 except StopIteration:
                     value_f.address = 0
                     value_f.print_value()
-                    value_f.print_post(indent + config.indent_pre, True, True)
+                    value_f.print_post(indent + printcfg.indent_pre, True, True)
                     break
                 except Exception as e:
                     value_f.error = error_format(e)
                     value_f.print_value()
-                    value_f.print_post(indent + config.indent_pre, True, True)
+                    value_f.print_post(indent + printcfg.indent_pre, True, True)
                     break
 
                 n += 1
@@ -905,7 +900,7 @@ class GdbValue:
 
     def print_obj_set(self, obj, depth, expr, pos, indent, mod):
         try:
-            pos = mod.get_fetch(expr, pos, config.fetch_array)
+            pos = mod.get_fetch(expr, pos, printcfg.fetch_array)
             if mod.ranges is None:
                 next_v = None
             else:
@@ -938,21 +933,21 @@ class GdbValue:
                     break
 
                 value_f = ValueOut("[%d]" % n)
-                value_f.print_name(indent + config.indent_pre)
+                value_f.print_name(indent + printcfg.indent_pre)
                 try:
                     elem = so.next()
                     if n < start:
                         continue
 
                     velem = GdbValue(elem)
-                    velem.print_v(value_f.name, depth2, expr, pos, False, True, indent + config.indent_pre)
+                    velem.print_v(value_f.name, depth2, expr, pos, False, True, indent + printcfg.indent_pre)
                     value_f.print_post("", True, True)
                 except StopIteration:
                     break
                 except Exception as e:
                     value_f.error = error_format(e)
                     value_f.print_value()
-                    value_f.print_post(indent + config.indent_pre, True, True)
+                    value_f.print_post(indent + printcfg.indent_pre, True, True)
                     break
 
                 n += 1
@@ -961,7 +956,7 @@ class GdbValue:
 
     def print_obj_bitset(self, obj, depth, expr, pos, indent, mod):
         try:
-            pos = mod.get_fetch(expr, pos, config.fetch_array)
+            pos = mod.get_fetch(expr, pos, printcfg.fetch_array)
             pos = mod.get_filters(expr, pos)
             bo = obj(self.v, self.v.type)
             depth2 = mod.get_depth(expr, pos, depth)
@@ -986,7 +981,7 @@ class GdbValue:
             except Exception as e:
                 value_err = ValueOut("[]")
                 value_err.error = error_format(e)
-                value_err.print_all(indent + config.indent_pre, True, True)
+                value_err.print_all(indent + printcfg.indent_pre, True, True)
                 continue
             
             #print_str(str(e))
@@ -998,7 +993,7 @@ class GdbValue:
 
                 value_f = ValueOut("[%d]" % v[0])
                 value_f.value = str(v[1])
-                value_f.print_all(indent + config.indent_pre, True, True)
+                value_f.print_all(indent + printcfg.indent_pre, True, True)
 
                 if action == Filter.STOP:
                     break
@@ -1007,7 +1002,7 @@ class GdbValue:
 
     def print_obj_map(self, obj, depth, expr, pos, indent, mod):
         try:
-            pos = mod.get_fetch(expr, pos, config.fetch_array)
+            pos = mod.get_fetch(expr, pos, printcfg.fetch_array)
             pos = mod.get_filters(expr, pos)
             if mod.ranges is None:
                 next_v = None
@@ -1043,20 +1038,20 @@ class GdbValue:
                     if n < start:
                         continue
 
-                    self.print_kv(indent + config.indent_pre, n, k, v, depth2, expr, pos)
+                    self.print_kv(indent + printcfg.indent_pre, n, k, v, depth2, expr, pos)
                 except StopIteration:
                     break
                 except Exception as e:
                     value_err = ValueOut("[%d]" % n)
                     value_err.error = error_format(e)
-                    value_err.print_all(indent + config.indent_pre, True, True)
+                    value_err.print_all(indent + printcfg.indent_pre, True, True)
                     break
 
         self.value.print_post(indent)
 
     def print_obj_struct(self, obj, depth, expr, pos, indent, mod, print_eq = True):
         try:
-            pos = mod.get_fetch(expr, pos, config.fetch_array)
+            pos = mod.get_fetch(expr, pos, printcfg.fetch_array)
             pos = mod.get_filters(expr, pos)
             if mod.ranges is None:
                 next_v = None
@@ -1090,14 +1085,14 @@ class GdbValue:
                     break
 
                 value_f = ValueOut("[%d]" % n)
-                value_f.print_name(indent + config.indent_pre)
+                value_f.print_name(indent + printcfg.indent_pre)
                 try:
                     velem = GdbValue(v)
                     action = filters_check(velem, mod.filters)
                     if action == Filter.SKIP:
                         continue
  
-                    velem.print_v("[%d]" % n, depth2, expr, pos, False, True, indent + config.indent_pre)
+                    velem.print_v("[%d]" % n, depth2, expr, pos, False, True, indent + printcfg.indent_pre)
                 except Exception as e:
                     value_f.error = error_format(e)
                     value_f.print_value()
@@ -1231,7 +1226,7 @@ class GdbVisitor:
 
     def print_frame(self, is_global, depth = None):
         if depth is None:
-            depth = config.depth
+            depth = printcfg.depth
         if is_global:
             values = self.list_globals()
         else:
@@ -1244,13 +1239,13 @@ class GdbVisitor:
             ValueOut.print_section("global")
         else:
             ValueOut.print_section(values[0][0])
-	for v in values:
+        for v in values:
             value = ValueOut(v[1])
-            value.print_name(config.indent_pre)
+            value.print_name(printcfg.indent_pre)
             try:
 		#print_str(str(v) + "\n")
                 gv = GdbValue(v[2])
-                gv.print_v(value.name, depth, None, -1, False, True, config.indent_pre)
+                gv.print_v(value.name, depth, None, -1, False, True, printcfg.indent_pre)
                 value.print_endline(True, True)
             except Exception as e:
                 value.error = error_format(e)

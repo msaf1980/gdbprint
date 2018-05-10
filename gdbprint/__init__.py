@@ -1,23 +1,29 @@
 # -*- coding: utf-8 -*-
 
+import sys
 import gdb
 import re
 import traceback
 
-from parser import CommandParser, Expr, ValueOut, tree_str
-import config
-from config import OutType
+from .parser import CommandParser, Expr, ValueOut, tree_str
+if sys.version_info < (3, 0, 0):
+    import printcfg
+else:
+    from . import printcfg
+from .printcfg import OutType
 
-from gdbutils import print_str
-from utils import print_obj
-from utils import is_true_or_num
+from .gdbutils import print_str
+from .utils import print_obj
+from .utils import is_true_or_num
 
-from gdbvalue import GdbVisitor
-from utils import show_printers
+from .gdbvalue import GdbVisitor
+from .utils import show_printers
 
 import sys
-reload(sys)
-sys.setdefaultencoding('utf8')
+
+if sys.version_info < (3, 0, 0):
+    reload(sys)
+    sys.setdefaultencoding('utf8')
 
 #import libstdcpp_v3
 #libstdcpp_v3.register()
@@ -38,22 +44,22 @@ class CommandParserSet(gdb.Command):
     def invoke (self, arg, from_tty):
         argl = arg.lower()
         if argl is None or arg in [ "", "help" ]:
-            config.help()
+            printcfg.help()
         #elif arg == "debug":
-        #    config.debug = True
+        #    printcfg.debug = True
         #elif arg == "nodebug":
-        #    config.debug = False
+        #    printcfg.debug = False
         #elif arg == "xml":
-        #    config.xml = True
+        #    printcfg.xml = True
         #elif arg == "noxml":
-        #    config.xml = False
+        #    printcfg.xml = False
         #elif arg == "pygdbmi":
-        #    config.pygdbmi= True
+        #    printcfg.pygdbmi= True
         #elif arg == "nopygdbmi":
-        #    config.pygdbmi = False
+        #    printcfg.pygdbmi = False
         elif argl in ("cp", "codepage"):
-            config.codepage = config.codepage_default
-            config.codepage_failback = config.codepage_default
+            printcfg.codepage = printcfg.codepage_default
+            printcfg.codepage_failback = printcfg.codepage_default
         else:
             s = re.split(" +", argl.lower())
             if len(s) == 1:
@@ -62,51 +68,51 @@ class CommandParserSet(gdb.Command):
                     return
             elif len(s) == 2:
                 if s[0] in ("o", "output_type"):
-                    config.out_type = OutType.from_str(s[1])
+                    printcfg.out_type = OutType.from_str(s[1])
                     return
                 elif s[0] in ("d", "debug"):
-                    config.debug = is_true_or_num(s[1])
+                    printcfg.debug = is_true_or_num(s[1])
                     return
                 #elif s[0] == "xml":
-                #    config.xml = is_true(s[1])
+                #    printcfg.xml = is_true(s[1])
                 #    return
                 #elif s[0] == "pygdbmi":
-                #    config.pygdbmi = is_true(s[1])
+                #    printcfg.pygdbmi = is_true(s[1])
                 #    return
                 elif s[0] in ("cp", "codepage"):
                     if s[1] in ("utf-8", "utf8"):
-                        if not config.codepage in ("utf-8", "utf8"):
-                            config.codepage_failback = config.codepage
-                        config.codepage = "utf-8"
+                        if not printcfg.codepage in ("utf-8", "utf8"):
+                            printcfg.codepage_failback = printcfg.codepage
+                        printcfg.codepage = "utf-8"
                     else:
-                        config.codepage_failback = config.codepage_default
-                	config.codepage = s[1]
+                        printcfg.codepage_failback = printcfg.codepage_default
+                        printcfg.codepage = s[1]
                     
                     return
                 elif s[0] in ("w", "width"):
-                    config.width = int(s[1])
+                    printcfg.width = int(s[1])
                     return
                 elif s[0] in ("de", "depth"):
-                    config.depth = int(s[1])
+                    printcfg.depth = int(s[1])
                     return
                 elif s[0] in ("v", "verbose"):
-                    config.verbose = int(s[1])
+                    printcfg.verbose = int(s[1])
                     return
             elif len(s) == 3:
                 if s[0] in ("f", "fetch"):
                     if s[1] in ("a", "array"):
-                        config.fetch_array = int(s[2])
+                        printcfg.fetch_array = int(s[2])
                         return
                     elif s[1] in ("s", "string"):
-                        config.fetch_string = int(s[2])
+                        printcfg.fetch_string = int(s[2])
                         return
                     elif s[0] in ("cp", "codepage"):
                         if s[1] in ("utf-8", "utf8"):
-                            config.codepage = "utf-8"
-                            config.codepage_failback = s[2]
+                            printcfg.codepage = "utf-8"
+                            printcfg.codepage_failback = s[2]
                         elif s[2] in ("utf-8", "utf8"):
-                            config.codepage = "utf-8"
-                            config.codepage_failback = s[1]
+                            printcfg.codepage = "utf-8"
+                            printcfg.codepage_failback = s[1]
                         else:
                             gdb.write("unkown codepages sequence {:s}\n".format(arg))
             gdb.write("unkown command {:s}\n".format(arg))
@@ -127,7 +133,7 @@ class CommandParserCmd(gdb.Command):
         try:
             visitor = GdbVisitor()
             tree = cmd_parse.parse(arg)
-            if config.debug > 0:
+            if printcfg.debug > 0:
                 for t in tree:
                     print_str("%s\n" % tree_str(t[0]))
 
@@ -138,10 +144,10 @@ class CommandParserCmd(gdb.Command):
                 e.eval_print(visitor, t[1])
                 i += 1
                 if i < len(tree):
-                    if config.out_type <> OutType.TEXT:
+                    if printcfg.out_type != OutType.TEXT:
                         value.print_post("", True, True)
         except:
-            if config.debug:
+            if printcfg.debug:
                 gdb.write(traceback.format_exc() + "\n")
             raise
 
@@ -163,7 +169,7 @@ class LocalCommand(gdb.Command):
             visitor = GdbVisitor()
             visitor.print_frame(False)
         except:
-            if config.debug:
+            if printcfg.debug:
                 gdb.write(traceback.format_exc() + "\n")
             raise
 
@@ -185,7 +191,7 @@ class GlobalCommand(gdb.Command):
             visitor = GdbVisitor()
             visitor.print_frame(True)
         except:
-            if config.debug:
+            if printcfg.debug:
                 gdb.write(traceback.format_exc() + "\n")
             raise
 

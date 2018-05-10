@@ -1,5 +1,5 @@
 (gdb) file test
-(gdb) py sys.path.append('..')
+(gdb) py sys.path.insert(0, '..')
 (gdb) py import gdbprint
 (gdb) break 77
 (gdb) run
@@ -13,7 +13,7 @@ Breakpoint 1, main at test.cpp:77
 frame = "main(int, char**)" {
     "act" = (action) EXIT (0),
     "argc" = (int) 1,
-    "argv" = (char **) <0xHEX> { ptr = <0xHEX> { str_len:45 [0:399] = "/tests/test" + \0 } },
+    "argv" = (char **) <0xHEX> { ptr = <0xHEX> { str_len:N [0:399] = "/tests/test" + \0 } },
     "arr_2d" = (int [2][3]) <0xHEX> {
         [0] = (int [3]) <0xHEX> {
             [0] = 1,

@@ -1,9 +1,9 @@
 import gdb
 
-from gdbutils import print_str
-from utils import print_debug
-from utils import DisplayType
-
+from .gdbutils import print_str
+from .utils import print_debug
+from .utils import DisplayType
+from .define import uchr
 
 #  ##Base class
 #class DebugPrinter(object):
@@ -318,9 +318,9 @@ def read_string(nvalue, start,  end):
     target_array = bytearray()
     str_length = None
     if nvalue.type.code == gdb.TYPE_CODE_PTR:
-	ptr = nvalue.dereference()
-	if ptr.address == 0:
-	    return (None, 0, 0)
+        ptr = nvalue.dereference()
+        if ptr.address == 0:
+            return (None, 0, 0)
         target_type = str(ptr.type)
     else:    
         target_type = str(nvalue[0].type)
@@ -335,7 +335,7 @@ def read_string(nvalue, start,  end):
             break
         if elem < 0:
             elem += 256
-        #target_array += chr(elem).decode(config.codepage)
+        #target_array += chr(elem).decode(printcfg.codepage)
         target_array.append(int(elem))
         i += 1
     #print("read :" + str(i-1))
@@ -358,7 +358,7 @@ def read_unicode(nvalue, start,  end):
             str_length = i
             i += 1
             break
-        target_array += unichr(elem)
+        target_array += uchr(elem)
         i += 1
     #print("read :" + str(i-1))
     return (target_array,  i-1,  str_length)

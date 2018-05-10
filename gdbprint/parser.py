@@ -1,3 +1,4 @@
+import sys
 import shlex
 import re
 
@@ -6,12 +7,13 @@ import traceback
 
 from collections import deque
 
-import config
-from config import OutType
-from gdbutils import print_str
-from utils import print_debug, print_warn, print_error, print_obj
-from utils import error_format
-from utils import resolve_printer_typename
+from . import printcfg
+from .printcfg import OutType
+from .define import longx
+from .gdbutils import print_str
+from .utils import print_debug, print_warn, print_error, print_obj
+from .utils import error_format
+from .utils import resolve_printer_typename
 
 #import pprint
 
@@ -29,7 +31,7 @@ def filters_check(v, filters):
         action = Filter.PASS
         for f in filters:
             action = v.check(f)
-            if action <> Filter.PASS:
+            if action != Filter.PASS:
                 return action
         return action
 
@@ -77,7 +79,7 @@ class Mod:
             return expr.v[pos].t
 
     def get_struct(self, expr, pos):
-        if expr is None or pos == -1 or pos >= len(expr.v) or expr.v[pos].t <> FType.STRUCT:
+        if expr is None or pos == -1 or pos >= len(expr.v) or expr.v[pos].t != FType.STRUCT:
             self.sw = None
             return pos
         else:
@@ -88,7 +90,7 @@ class Mod:
         if expr is None or pos == - 1 or pos >= len(expr.v):
             self.transform = Transform()
             return -1
-        elif expr.v[pos].t <> FType.TRANSFORM:
+        elif expr.v[pos].t != FType.TRANSFORM:
             #print_obj(expr.v[pos])
             if t is None:
                 self.transform = Transform()
@@ -100,7 +102,7 @@ class Mod:
             #print_obj(expr.v[pos])
             self.transform = expr.v[pos]
             if expr.v[pos].cp is None:
-                self.cp = config.codepage
+                self.cp = printcfg.codepage
             else:
                 self.cp = Transform.code_page[expr.v[pos].cp]
             #print_obj(self)
@@ -111,7 +113,7 @@ class Mod:
             start = 0
             self.ranges = Range(start, start + default_fetch - 1)
             return pos
-        elif expr.v[pos].t <> FType.RANGE:
+        elif expr.v[pos].t != FType.RANGE:
             raise ValueError("%s not a range" % str(expr.v[pos]))
         elif len(expr.v[pos].range) == 0:
             self.ranges = Range(0, default_fetch - 1, expr.v[pos].next_v)
@@ -121,7 +123,7 @@ class Mod:
             return pos + 1
 
     def get_filters(self, expr, pos):
-        if expr is None or pos == -1 or pos >= len(expr.v) or expr.v[pos].t <> FType.FILTER:
+        if expr is None or pos == -1 or pos >= len(expr.v) or expr.v[pos].t != FType.FILTER:
             self.filters = None
             return pos
         else:
@@ -165,11 +167,11 @@ class ValueOut:
 
     def print_name(self, indent = "", space = True):
         if not self.name is None:
-            if config.out_type == OutType.TEXT and self.name[0] == "[" and self.name[-1] == "]":
+            if printcfg.out_type == OutType.TEXT and self.name[0] == "[" and self.name[-1] == "]":
                 name = self.name
             else:
                 name = "\"%s\"" % self.name
-            if config.out_type == OutType.NAMED:
+            if printcfg.out_type == OutType.NAMED:
                 self.print_str("%s{ name = %s," % (indent, name))
             else:
                 self.print_str("%s%s =" % (indent, name))
@@ -179,16 +181,16 @@ class ValueOut:
     def print_value(self, endline = False, comma = False, p_addr = False):
         #print_obj(self)
         out = list()
-        if not self.typename is None and config.verbose > 0:
-            if config.out_type == OutType.NAMED:
+        if not self.typename is None and printcfg.verbose > 0:
+            if printcfg.out_type == OutType.NAMED:
                 out.append("type = \"%s\"," % self.typename)
             else:
                 out.append("(%s)" % self.typename)
 
         if not self.address is None:
-            if self.address == 0 or config.verbose > 0 or p_addr or self.typename == "void *":
+            if self.address == 0 or printcfg.verbose > 0 or p_addr or self.typename == "void *":
                 addr = "<0x%x>" % self.address
-                if config.out_type == OutType.NAMED:
+                if printcfg.out_type == OutType.NAMED:
                     out.append("addr = %s," % addr)
                 else:
                     out.append(addr)
@@ -198,28 +200,28 @@ class ValueOut:
                 return
 
 
-        if not self.desc is None and config.verbose > 1:
-            if config.out_type == OutType.NAMED:
+        if not self.desc is None and printcfg.verbose > 1:
+            if printcfg.out_type == OutType.NAMED:
                 out.append("desc = \"%s\"," % self.desc)
             else:
                 out.append("desc:\"%s\"" % self.desc)
  
         len_str = ""
-        if config.verbose > 1:
-            if not self.str_len is None and self.str_len <> -1:
-                if config.out_type == OutType.NAMED:
+        if printcfg.verbose > 1:
+            if not self.str_len is None and self.str_len != -1:
+                if printcfg.out_type == OutType.NAMED:
                     len_str += " str_len = %d," % self.str_len
                 else:
                     len_str += " str_len:%d" % self.str_len
 
-            if not self.size is None and self.size <> -1:
-                if config.out_type == OutType.NAMED:
+            if not self.size is None and self.size != -1:
+                if printcfg.out_type == OutType.NAMED:
                     len_str += " size = %d," % self.size
                 else:
                     len_str += " size:%d" % self.size
 
-            if not self.capacity is None and self.capacity <> -1:
-                if config.out_type == OutType.NAMED:
+            if not self.capacity is None and self.capacity != -1:
+                if printcfg.out_type == OutType.NAMED:
                     len_str += " capacity = %d," % self.capacity
                 else:
                     len_str += " capacity:%d" % self.capacity
@@ -229,11 +231,11 @@ class ValueOut:
             if len(len_str) > 0:
                 out.append(len_str[1:])
             if len(out) > 0: self.print_str(" ".join(out))
-            self.print_subtype(False if config.verbose == 0 else True) 
+            self.print_subtype(False if printcfg.verbose == 0 else True) 
             return
 
         if not self.range is None:
-            if config.out_type == OutType.NAMED:
+            if printcfg.out_type == OutType.NAMED:
                 out.append("range = {%s name = \"%s\"," % (len_str, self.range))
             else:
                 out.append("{%s %s =" % (len_str, self.range))
@@ -241,18 +243,18 @@ class ValueOut:
             out.append(len_str[1:])
 
         if not self.error is None:
-            if config.out_type == OutType.NAMED:
+            if printcfg.out_type == OutType.NAMED:
                 out.append("error = \"%s\"" % self.error)
             else:
                 out.append("error:\"%s\"" % self.error)
         elif not self.value is None:
-            if config.out_type == OutType.NAMED:
+            if printcfg.out_type == OutType.NAMED:
                 v = self.value.replace("\"", "\\\"")
                 out.append("value = \"%s\"" % v)
             else:
                 out.append(self.value)
         elif not self.range is None:
-            if config.out_type == OutType.NAMED:
+            if printcfg.out_type == OutType.NAMED:
                 out.append("value = None")
             else:
                 out.append("None")
@@ -278,12 +280,12 @@ class ValueOut:
         if self.error is None and not self.subtype is None:
             if space: self.print_space()
             if self.subtype == SubType.MULTI:
-                if config.out_type == OutType.NAMED:
+                if printcfg.out_type == OutType.NAMED:
                     self.print_str("value = {\n")
                 else:
                     self.print_str("{\n")
             elif self.subtype == SubType.PTR:
-                if config.out_type == OutType.NAMED:
+                if printcfg.out_type == OutType.NAMED:
                     self.print_str("ptr = { ")
                 else:
                     self.print_str("{ ptr = ")
@@ -294,7 +296,7 @@ class ValueOut:
         elif self.subtype == SubType.PTR and self.error is None:
             print_str(" }")
 
-        if (end or not self.name is None) and config.out_type == OutType.NAMED:
+        if (end or not self.name is None) and printcfg.out_type == OutType.NAMED:
             print_str(" }")
 
         self.print_endline(endline, comma)
@@ -306,7 +308,7 @@ class ValueOut:
 
     @staticmethod
     def print_prekv(key = False):
-        if config.out_type == OutType.NAMED:
+        if printcfg.out_type == OutType.NAMED:
             s = "key" if key else "value"
             print_str("%s = { " % s)
         else:
@@ -314,7 +316,7 @@ class ValueOut:
 
     @staticmethod
     def print_postkv(key = False):
-        if config.out_type == OutType.NAMED:
+        if printcfg.out_type == OutType.NAMED:
             print_str(" }, ")
         elif key:
             print_str(" } => ")
@@ -323,7 +325,7 @@ class ValueOut:
 
     @staticmethod
     def print_section(s, indent = ""):
-        if config.out_type == OutType.NAMED:
+        if printcfg.out_type == OutType.NAMED:
             print_str("%sframe = \"%s\", values = {\n" % (indent, s))
         else:
             print_str("%sframe = \"%s\" {\n" % (indent, s))
@@ -398,7 +400,7 @@ class FType:
         if FType.r_NUM.match(s) is None:
             return False
         else:
-            self.v = long(s)
+            self.v = longx(s)
             self.t = FType.NUM
             return True
 
@@ -423,7 +425,7 @@ class FType:
         if FType.r_ADDR.match(s) is None:
             return False
         else:
-            self.v = long(s, 16)
+            self.v = longx(s, 16)
             self.t = FType.ADDR
             return True
 
@@ -502,7 +504,7 @@ class Expr:
                 flist.append(v[0])
             elif self.v[pos].t in [ FType.NEG, FType.SUM, FType.MINUS, FType.DIV, FType.MUL ]:
                 v = self.v[pos].eval(flist, visitor)
-                #if config.debug:
+                #if printcfg.debug:
                 #    print_obj(v[0])
                 del flist[:]
                 flist.append(v[0])
@@ -537,7 +539,7 @@ class Expr:
 
     def eval_print(self, visitor = None, name = None, depth = None):
         if depth is None:
-            depth = config.depth
+            depth = printcfg.depth
         value = ValueOut(name)
         value.print_name()
         try:
@@ -785,7 +787,7 @@ class FilterItem:
 
             if self.c1.t == self.c2.t and self.c1.v == self.c2.v:
                 raise ValueError("invalid filter '%s' equal items" % s)
-            elif self.c1.t == FType.THIS and self.c2.t <> FType.NUM:
+            elif self.c1.t == FType.THIS and self.c2.t != FType.NUM:
                 raise ValueError("invalid filter '%s' items combination" % s)
 
     def __str__(self):
@@ -931,7 +933,7 @@ class Struct:
         #self.all = False
         self.hide_fields = set()
         self.noderef_fields = set()
-        if not s is None and s <> "":
+        if not s is None and s != "":
             fall = False
             for f in s.split(','):
                 if f == "*":

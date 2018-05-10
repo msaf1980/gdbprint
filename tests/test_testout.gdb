@@ -1,5 +1,5 @@
 (gdb) file test
-(gdb) py sys.path.append('..')
+(gdb) py sys.path.insert(0, '..')
 (gdb) py import gdbprint
 (gdb) break 77
 (gdb) run

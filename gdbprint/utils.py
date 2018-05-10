@@ -1,8 +1,12 @@
 import traceback
-from gdbutils import print_str
-import config
-from config import basestr
-from config import debugprinters, debugprinters_typenames
+import sys
+from .gdbutils import print_str
+#if sys.version_info < (3, 0, 0):
+#    import printcfg
+#else:
+from . import printcfg
+from .printcfg import basestr
+from .printcfg import debugprinters, debugprinters_typenames
 
 
 class DisplayType:
@@ -93,9 +97,11 @@ def register_printer(obj):
  #   debugprinters_typemap[name] = typename
  
 def resolve_printer(name):
+    print_debug(name)
     return debugprinters.get(name)
 
 def resolve_printer_typename(typename):
+    print_debug(typename)
     return debugprinters_typenames.get(typename)
 
 def show_printers():
@@ -132,21 +138,21 @@ def is_true_or_num(str):
         return int(str)
 
 def error_format(e):
-    if config.debug or e is None:
+    if printcfg.debug or e is None:
         s = traceback.format_exc()
     else:
         s = str(e)
     return s
 
 def print_debug(s, level = 1):
-    if level <= config.debug and not s is None:
-	print_str(s)
-	print_str("\n")
+    if level <= printcfg.debug and not s is None:
+        print_str(s)
+        print_str("\n")
 
 def print_warn(s):
     if not s is None:
-	print_str("WARNING: " + s)
-	print_str("\n")
+        print_str("WARNING: " + s)
+        print_str("\n")
 
 def print_error(s):
     if not s is None:
@@ -167,7 +173,7 @@ def print_obj(s, indent = ""):
         print_str("]\n")
     elif hasattr(s, '__dict__'):
         attrs = dir(s)
-        if indent <> "":
+        if indent != "":
             print_str("\n")
         print_str("%s(\n" % indent)
         for i in attrs:

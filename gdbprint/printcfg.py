@@ -1,8 +1,8 @@
 from __future__ import print_function
 
-from gdbutils import print_str
 import gdb
 import sys
+from .gdbutils import print_str
 
 class OutType:
     TEXT = 0
@@ -57,10 +57,12 @@ debugprinters_typenames = {}
 if sys.version_info < (3, 0, 0):
     uchr = unichr
     basestr = basestring
+    longx = long
 else:
     uchr = chr
     basestr = (str, bytes)
-
+    longx = int
+    
 
 def help():
     cmd_opt = "p_s"

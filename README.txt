@@ -2,6 +2,8 @@
 
 Package for browse data structuras with GDB python API
 
+Tested Python version - 2.7 (gdb 7.6) and 3.5 (gdb 7.12)
+
 Print local variables
   p_l
   
@@ -79,6 +81,8 @@ Transform
 <str>         string (char[] alredy interpreted as null-terrminated string) with codepage (if decode failed, with codepage_failback)
 <utf-8>       utf-8 string (if decode failed, with codepage_failback)
 <arr>         array
+<simple>      Use gdb print method (via str conversion)
+<raw>         Ignore registerd printers and display structure fields
 <typename>    typename (for custom data structuras
   
 Transform combinations

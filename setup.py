@@ -40,6 +40,7 @@ class RunTests(Command):
             o = re.sub(r'Breakpoint [0-9]+, main \(argc=1, argv=0x[0-9a-f]+\) at', 'Breakpoint 1, main at', o)
             o = re.sub(r'[0-9]+[ \t]+return 0;', '', o)
             o = re.sub(r'0x[0-9a-f]*[1-9a-f]+[0-9a-f]*', '0xHEX', o)
+            o = re.sub(r'"argv" = \(char \*\*\) <0xHEX> { ptr = <0xHEX> { str_len:\d+ ', '"argv" = (char **) <0xHEX> { ptr = <0xHEX> { str_len:N ', o)
             o = re.sub(cdir, '', o)
             with open(test + '.reject', 'w') as f: f.write(o)
             call([ 'diff', '-u', test + '.out', test + '.reject' ])
@@ -47,16 +48,23 @@ class RunTests(Command):
 
 class RunClean(clean):
     def run(self):
+        global pname
         from subprocess import Popen, PIPE, call
         from os import getcwd, chdir, path
+        from os import remove
+        import glob
         import shutil
         c = clean(self.distribution)
         c.all = True
         c.finalize_options()
         c.run()
         cdir = path.dirname(path.realpath(__file__))
+        for f in glob.glob(path.join(cdir, pname, "*.pyc")):
+            remove(f)
+        shutil.rmtree(path.join(cdir, 'build'), ignore_errors=True)
         shutil.rmtree(path.join(cdir, 'dist'), ignore_errors=True)
-        shutil.rmtree(path.join(cdir, 'gdbprint.egg-info'), ignore_errors=True)
+        shutil.rmtree(path.join(cdir, pname + '.egg-info'), ignore_errors=True)
+        shutil.rmtree(path.join(cdir, pname, '__pycache__'), ignore_errors=True)
         cwd = path.join(cdir, 'tests')
         chdir(cwd)
         call([ 'make', 'clean' ])
@@ -64,14 +72,16 @@ class RunClean(clean):
 
 if __name__ == '__main__':
 
-    setup(name='gdbprint',
-        version='0.1.0',
+    pname = 'gdbprint'
+
+    setup(name=pname,
+        version='0.1.1',
         description='GDB data structuras browser with Python API',
         url='http://github.com/msaf1980/gdbprint',
         author='Michail Safronov',
         author_email='msaf1980@gmail.com',
         license='MIT',
-        packages=['gdbprint'],
+        packages=[pname],
         zip_safe=True,
         cmdclass={
             'test': RunTests,
