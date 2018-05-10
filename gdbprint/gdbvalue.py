@@ -625,7 +625,7 @@ class GdbValue:
             if depth2 >= 0:
                 value = ValueOut()
                 value.subtype = SubType.PTR
-                #value.print_space()
+                if printcfg.verbose > 0: value.print_space()
                 value.print_subtype()
                 #value.print_space()
                 self.target.print_v("ptr", depth2, expr, pos, False, True, indent, mod)

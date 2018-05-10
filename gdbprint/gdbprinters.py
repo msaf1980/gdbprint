@@ -268,10 +268,15 @@ def p_name(fullname):
                 return fullname
             r2 = fullname.find(", ", r1)
             if r2 == -1:
-                return fullname
+                return fullname[0:r1 + 1] + " ..>"
             r2 = fullname.find("<", i+1)
             if r2 == -1:
-                return fullname
+                #return fullname
+                r2 = fullname.rfind("::")
+                if r2 > e:
+            	    return fullname[0:r1 + 1] + " ..>" + fullname[r2:]
+                else:
+            	    return fullname
             name = fullname[:i+1]
             end = fullname[e:]
             param = fullname[i+1:r1]
