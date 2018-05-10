@@ -54,16 +54,6 @@ debugprinters_typenames = {}
 # Dict   name : typename
 #debugprinters_typemap = {}
 
-if sys.version_info < (3, 0, 0):
-    uchr = unichr
-    basestr = basestring
-    longx = long
-else:
-    uchr = chr
-    basestr = (str, bytes)
-    longx = int
-    
-
 def help():
     cmd_opt = "p_s"
     print_str("Options:\n")

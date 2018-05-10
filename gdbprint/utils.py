@@ -5,7 +5,7 @@ from .gdbutils import print_str
 #    import printcfg
 #else:
 from . import printcfg
-from .printcfg import basestr
+from .define import basestr
 from .printcfg import debugprinters, debugprinters_typenames
 
 
