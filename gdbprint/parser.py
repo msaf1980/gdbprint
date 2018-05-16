@@ -73,6 +73,15 @@ def calc_range(r0, r1, size, visitor = None):
             end = size - 1
         return (start, end)
 
+def num2str(n, mod = None):
+    if not mod.transform is None and mod.transform.v == Transform.HEX:
+        if n >= 0:
+            return "0x%x" % n
+        else:
+            return "-0x%x" % abs(n)
+    else:
+        return str(n)
+
 
 class Mod:
     def __init__(self, transform = None, cp = None, filters = None, ranges = None, sw = None):
@@ -472,11 +481,14 @@ class FType:
             #print_str(" %s" % self.v)
             value.error = self.v
         else:
+            mod = Mod()
             if pos < len(expr.v):
-                raise ValueError("no ranges, filters and etc for simple type") 
-            if self.t in (FType.NUM, FType.FLOAT):
-                #print_str(" %s" % str(self.v))
-                value.value = str(self.v)
+                pos = mod.get_transform(expr, pos)
+                #raise ValueError("no ranges, filters and etc for simple type") 
+            if self.t == FType.NUM:
+                value.value = num2str(self.v, mod)
+            elif self.t == FType.FLOAT:
+                    value.value = str(self.v)
             else:
                 raise ValueError("%s (%d) need to be eval" % (str(self), self.t))
 
@@ -519,6 +531,7 @@ class Expr:
         while pos < len(self.v):
             if self.v[pos].t in [ FType.NUM, FType.FLOAT, FType.NAME, FType.EXPR ]:
                 v = self.v[pos].eval(visitor)
+                #print_debug(str(v) + "\n")
                 flist.append(v[0])
             elif self.v[pos].t in [ FType.NEG, FType.SUM, FType.MINUS, FType.DIV, FType.MUL ]:
                 v = self.v[pos].eval(flist, visitor)
@@ -561,6 +574,7 @@ class Expr:
         value = ValueOut(name)
         value.print_name()
         try:
+            #print_debug(str(visitor) + "\n")
             v = self.eval(visitor)
             v[0].print_v(name, depth, self, v[1], False)
             value.print_post("", True)
@@ -663,6 +677,7 @@ class Transform:
     RAW = 1
     SIMPLE = 2
     TYPE = 3
+    HEX = 4
 
     UNICODE = 8
     STR = 9
@@ -696,6 +711,8 @@ class Transform:
                 self.v = Transform.RAW
             elif s2 == "simple":
                 self.v = Transform.SIMPLE
+            elif s2 in ("h", "hex"):
+                self.v = Transform.HEX
             else:
                 #i = s2.find("=")
                 #if i == -1:
@@ -724,6 +741,8 @@ class Transform:
                 t.append("raw")
             elif v == Transform.SIMPLE:
                 t.append("simple")
+            elif v == Transform.HEX:
+                t.append("hex")
             else:
                 t.append("unknown (%d)" % v)
             s = "<%s>" % ",".join(t)
@@ -948,8 +967,26 @@ class Oper:
                 return (visitor.deref(flist[0]), 0)
             else:
                 raise ValueError("%s requires 1 argument" % str(self))
+        elif self.t == FType.NEG:
+            if len(flist) == 1:
+                return (self.neg(flist[0], visitor), 0)
+            else:
+                raise ValueError("%s requires 1 argument" % str(self))
+
         else:
             raise ValueError("unsupported operator %s" % str(self))
+
+    def neg(self, f, visitor = None):
+        if f.t in (FType.NUM, FType.FLOAT):
+            return FType(-f.v, f.t)
+        elif f.t == FType.VAL:
+            if visitor is None:
+                raise ValueError("visitor is not set")
+            else:
+                return visitor.neg(f)
+        else:
+            raise ValueError("%s is unsupported for NEG" % str(f))
+
 
     #def validate_field(f):
     #    return (True if f.t in self.allow_types else False)
@@ -1166,6 +1203,7 @@ class CommandParser:
                     pos += 1
 
                 if found:
+                    coper += self.flush(rp, stack)
                     rp.append(Transform("".join(s[spos:pos])))
                 else:
                     raise ValueError("unclosed > at %d" % (spos - 1))

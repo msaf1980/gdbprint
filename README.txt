@@ -31,7 +31,7 @@ Print structure fields only
 Hide structure fields
   p_v name .(( !field1, !field2, .. ))
   
-Don't dereference structure fields
+Don't dereference/expand structure fields
   p_v name .(( !field1, !field2, .. ))
 
 Print elements of iterable structuras (arrays, list, map, set, etc.) or string
@@ -83,6 +83,7 @@ Transform
 <arr>         array
 <simple>      Use gdb print method (via str conversion)
 <raw>         Ignore registerd printers and display structure fields
+<hex>         Hex view (0xHEX) for decimal numbers
 <typename>    typename (for custom data structuras
   
 Transform combinations

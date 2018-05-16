@@ -288,3 +288,9 @@ frame = "global" {
 }
 (gdb) p_v wstr[n-1:n*2]
 "wstr" = (wchar_t *) <0xHEX> { [1:4] = L"асил" }
+(gdb) p_v 1<hex>
+"1" = 0x1
+(gdb) p_v -1<hex>
+"- 1" = -0x1
+(gdb) p_v 1-n<hex>
+"1 - n" = (unsigned long) -0x1

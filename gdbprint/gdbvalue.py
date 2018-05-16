@@ -20,6 +20,7 @@ from .utils import print_debug, print_warn, print_error, print_obj
 from .utils import resolve_printer, resolve_printer_typename
 from .parser import filters_check
 from .parser import calc_range
+from .parser import num2str
 from .parser import Filter, CmpVal, FType, Transform, Range, Mod, ValueOut, SubType
 
 def calc_cwidth(vtype):
@@ -170,6 +171,8 @@ class GdbValue:
             if mod is None:
                 mod = Mod()
                 pos = mod.get_transform(expr, pos)
+                #if not mod.transform is None:
+                #    print_obj(mod.transform)
 
             if not mod.transform is None and mod.transform.v == Transform.SIMPLE:
                 self.value.value = str(self.v)
@@ -245,6 +248,9 @@ class GdbValue:
             #end if self.vtype.code in (gdb.TYPE_CODE_ARRAY, gdb.TYPE_CODE_PTR)<F2>
             elif self.vtype.code == gdb.TYPE_CODE_ENUM:
                 self.value.value = "%s (%d)" % (str(self.v), int(self.v))
+                self.value.print_value()
+            elif self.vtype.code == gdb.TYPE_CODE_INT:
+                self.value.value = num2str(longx(self.v), mod)
                 self.value.print_value()
             else:
                 self.value.value = str(self.v)
@@ -1154,6 +1160,10 @@ class GdbVisitor:
     @staticmethod
     def ref(r):
         return GdbValue(r.v.referenced_value())
+
+    @staticmethod
+    def neg(r):
+        return GdbValue(-r.v)
 
     @staticmethod
     def list_locals():
