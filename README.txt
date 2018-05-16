@@ -84,6 +84,7 @@ Transform
 <simple>      Use gdb print method (via str conversion)
 <raw>         Ignore registerd printers and display structure fields
 <hex>         Hex view (0xHEX) for decimal numbers
+<num>         Decimal view for decimal numbers and address
 <typename>    typename (for custom data structuras
   
 Transform combinations

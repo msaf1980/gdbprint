@@ -74,18 +74,23 @@ def calc_range(r0, r1, size, visitor = None):
         return (start, end)
 
 def num2str(n, mod = None):
-    if not mod.transform is None and mod.transform.v == Transform.HEX:
+    if not mod is None and not mod.transform is None and mod.transform.v == Transform.HEX:
         if n >= 0:
             return "0x%x" % n
         else:
             return "-0x%x" % abs(n)
+    elif not mod is None and not mod.transform is None and mod.transform.v == Transform.NUM:
+        return "%d" % n
     else:
         return str(n)
 
 
 class Mod:
     def __init__(self, transform = None, cp = None, filters = None, ranges = None, sw = None):
-        self.transform = transform
+        if transform is None:
+            self.transform = Transform()
+        else:
+            self.transform = transform
         self.cp = None
         self.filters = filters
         self.ranges = ranges
@@ -136,6 +141,8 @@ class Mod:
             return pos + 1
 
     def get_fetch(self, expr, pos, default_fetch):
+        if not self.ranges is None:
+            return pos
         if expr is None or pos == -1 or pos >= len(expr.v):
             start = 0
             self.ranges = Range(start, start + default_fetch - 1)
@@ -441,6 +448,8 @@ class FType:
             return True
 
     def t_NAME(self, s):
+        if not s is None and len(s) >=2 and s[0] == "\"" and s[-1] == "\"":
+            s = s[1:-1]
         if FType.r_NAME.match(s) is None:
             return False
         else:
@@ -531,26 +540,18 @@ class Expr:
         while pos < len(self.v):
             if self.v[pos].t in [ FType.NUM, FType.FLOAT, FType.NAME, FType.EXPR ]:
                 v = self.v[pos].eval(visitor)
-                #print_debug(str(v) + "\n")
                 flist.append(v[0])
             elif self.v[pos].t in [ FType.NEG, FType.SUM, FType.MINUS, FType.DIV, FType.MUL ]:
                 v = self.v[pos].eval(flist, visitor)
-                #if printcfg.debug:
-                #    print_obj(v[0])
                 del flist[:]
                 flist.append(v[0])
             elif self.v[pos].t == FType.DEREF:
-                #raise ValueError("not supported deref")
                 v = flist[-1].deref()
                 flist[-1] = v
             elif self.v[pos].t == FType.REF:
-                #raise ValueError("not supported ref")
                 v = flist[-1].ref()
                 flist[-1] = v
             elif self.v[pos].t == FType.CAST:
-                #print_obj(flist)
-                #print_obj(self.v[pos])
-                #raise ValueError("not supported cast")
                 v = flist[-1].cast(self.v[pos].v)
                 flist[-1] = v
             elif self.v[pos].t == FType.ADDR:
@@ -574,7 +575,6 @@ class Expr:
         value = ValueOut(name)
         value.print_name()
         try:
-            #print_debug(str(visitor) + "\n")
             v = self.eval(visitor)
             v[0].print_v(name, depth, self, v[1], False)
             value.print_post("", True)
@@ -595,7 +595,6 @@ class Range:
     def __init__(self, a1, a2 = None, next_v = None):
         self.init()
         if a2 is None and next_v is None:
-            #print_str(str(a1) + "\n")
             self.init_str(a1)
         else:
             if a1 is None:
@@ -678,6 +677,7 @@ class Transform:
     SIMPLE = 2
     TYPE = 3
     HEX = 4
+    NUM = 5
 
     UNICODE = 8
     STR = 9
@@ -713,15 +713,14 @@ class Transform:
                 self.v = Transform.SIMPLE
             elif s2 in ("h", "hex"):
                 self.v = Transform.HEX
+            elif s2 in ("n", "num"):
+                self.v = Transform.NUM
             else:
-                #i = s2.find("=")
-                #if i == -1:
-                    self.typeobj = resolve_printer_typename(s2)
-                    if self.typeobj is None:
-                        raise ValueError("unsupported transform '%s'" % s)
-                    self.typename = s2
-                    self.v = Transform.TYPE
-                #else:
+                self.typeobj = resolve_printer_typename(s2)
+                if self.typeobj is None:
+                    raise ValueError("unsupported transform '%s'" % s)
+                self.typename = s2
+                self.v = Transform.TYPE
 
 
     def __str__(self):
@@ -743,6 +742,8 @@ class Transform:
                 t.append("simple")
             elif v == Transform.HEX:
                 t.append("hex")
+            elif v == Transform.NUM:
+                t.append("num")
             else:
                 t.append("unknown (%d)" % v)
             s = "<%s>" % ",".join(t)
@@ -996,38 +997,92 @@ class Struct:
         self.t = FType.STRUCT
         self.fields = set()
         self.cast_fields = dict()
+        self.trans_fields = dict()
+        self.range_fields = dict()
         #self.all = False
         self.hide_fields = set()
         self.noderef_fields = set()
         if not s is None and s != "":
             fall = False
             for f in s.split(','):
-                if f == "*":
+                if f == '':
+                    continue
+                elif f == "*":
                     fall = True
                 elif f[0] == "!":
                     self.hide_fields.add(f[1:])
                 elif f[0] == "*":
                     self.noderef_fields.add(f[1:])
                 else:
-                    if f[0] == "(":
-                        i = f.find(")", 1)
-                        if i == -1:
-                            raise ValueError("unclosed ( at '%s'" % f)
-                        elif i == len(f) -1:
-                            raise ValueError("closed ) at '%s'" % f)
-                        cast = f[1:i].strip()
-                        name = f[i+1:]
+                    if f[0] == "\"" and f[-1] == "\"":
+                        f = f[1:-1]
+                    #print_str("%s\n" % f)
+                    cmd_parse = CommandParser()
+                    e = cmd_parse.parse1(f)
+                    #print_str("%s\n" % tree_str(e))
+                    i = 0
+                    if e[i].t == FType.NAME:
+                        name = e[i].v
+                        i += 1
                         self.fields.add(name)
-                        self.cast_fields[name] = cast
                     else:
-                        self.fields.add(f)
+                        raise ValueError("wrong field expr: %s" % f)
+
+                    if i < len(e) and e[i].t == FType.CAST:
+                        self.cast_fields[name] = e[i].v
+                        i += 1
+
+                    if i < len(e) and e[i].t == FType.TRANSFORM:
+                        self.trans_fields[name] = e[i]
+                        i += 1
+
+                    if i < len(e) and e[i].t == FType.RANGE:
+                        self.range_fields[name] = e[i]
+                        i += 1
+
+                    if i < len(e):
+                        raise ValueError("too long field expression: %s" % f)
+
+                    #if f[0] == "(":
+                    #    i = f.find(")", 1)
+                    #    if i == -1:
+                    #        raise ValueError("unclosed ( at '%s'" % f)
+                    #    elif i == len(f) -1:
+                    #        raise ValueError("closed ) at '%s'" % f)
+                    #    cast = f[1:i].strip()
+                    #    name = f[i+1:]
+                    #    self.fields.add(name)
+                    #    self.cast_fields[name] = cast
+                    #else:
+                    #    self.fields.add(f)
             if fall and len(self.fields) > 0:
                 self.fields = set()
             #    self.all = True
 
     def __str__(self):
         s = ".(( "
-        s += ", ".join(x for x in self.fields)
+        #s += ", ".join(x for x in self.fields)
+        first = True
+        for f in self.fields:
+            if first:
+                first = False
+            else:
+                s += ", "
+
+            cast = self.cast_fields.get(f)
+            if not cast is None:
+                s += "(%s)" % str(cast)
+
+            s += " %s" % f
+
+            t = self.trans_fields.get(f)
+            if not t is None:
+                s += str(t)
+
+            r = self.range_fields.get(f)
+            if not r is None:
+                s += str(r)
+
         if len(self.hide_fields) > 0:
             if len(s) > 3:
                 s += ", "
@@ -1140,7 +1195,7 @@ class CommandParser:
 
         pname = list()
 
-        print_debug(str(s), 2)
+        #print_debug(str(s), 2)
 
         while pos < len(s):
             if s[pos] == "(":
@@ -1239,7 +1294,7 @@ class CommandParser:
                             pos += 1
 
                         if found:
-                            rp.append(Struct("".join(s[spos:pos - 1])))
+                            rp.append(Struct(" ".join(s[spos:pos - 1])))
                         else:
                             raise ValueError("unclosed ) at %d" % (spos - 1))
                     else:

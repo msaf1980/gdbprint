@@ -171,11 +171,22 @@ class GdbValue:
             if mod is None:
                 mod = Mod()
                 pos = mod.get_transform(expr, pos)
-                #if not mod.transform is None:
-                #    print_obj(mod.transform)
+            else:
+                if printcfg.debug > 2 and not mod.transform is None:
+                    print_obj(mod.transform)
 
             if not mod.transform is None and mod.transform.v == Transform.SIMPLE:
                 self.value.value = str(self.v)
+                self.value.print_value()
+            elif not mod.transform is None and mod.transform.v in (Transform.HEX, Transform.NUM):
+                if self.vtype.code in (gdb.TYPE_CODE_STRUCT, gdb.TYPE_CODE_UNION, \
+                                         gdb.TYPE_CODE_REF, gdb.TYPE_CODE_ARRAY):
+                    self.value.value = num2str(self.v.address, mod)
+                elif self.vtype.code in (gdb.TYPE_CODE_INT, gdb.TYPE_CODE_PTR, gdb.TYPE_CODE_ENUM):
+                    self.value.value = num2str(longx(self.v), mod)
+                else:
+                    raise ValueError("unsupported transform: %s" % str(mod.transform))
+
                 self.value.print_value()
             elif self.vtype.code in (gdb.TYPE_CODE_STRUCT, gdb.TYPE_CODE_UNION):
                 if print_head:
@@ -215,7 +226,7 @@ class GdbValue:
                     if mod.transform.v is None:
                         mod.transform.v = Transform.UNICODE
                 elif self.vtype.code == gdb.TYPE_CODE_ARRAY and mod.transform.v is None:
-                        mod.transform.v = Transform.ARRAY
+                    mod.transform.v = Transform.ARRAY
 
                 if self.vtype.code == gdb.TYPE_CODE_ARRAY:
                     self.size = self.vtype.sizeof / self.target.vtype.sizeof
@@ -236,7 +247,6 @@ class GdbValue:
                 else:
                     depth2 = mod.get_depth(expr, pos, depth)
                     #print_str("\n%d %d\n" %(depth, depth2))
-                    #print_obj(self.value)
                     if depth2 >= 0:
                         self.value.subtype = SubType.PTR
                         self.value.print_value()
@@ -247,7 +257,7 @@ class GdbValue:
 
             #end if self.vtype.code in (gdb.TYPE_CODE_ARRAY, gdb.TYPE_CODE_PTR)<F2>
             elif self.vtype.code == gdb.TYPE_CODE_ENUM:
-                self.value.value = "%s (%d)" % (str(self.v), int(self.v))
+                self.value.value = "%s (%d)" % (str(self.v), longx(self.v))
                 self.value.print_value()
             elif self.vtype.code == gdb.TYPE_CODE_INT:
                 self.value.value = num2str(longx(self.v), mod)
@@ -550,7 +560,7 @@ class GdbValue:
                 value_err.error = error_format(e)
                 value_err.print_all(indent)
                 return
-        else: 
+        else:
             self.print_fields(depth, expr, pos, indent, mod)
 
     def print_fields(self, depth, expr, pos, indent, mod):
@@ -564,6 +574,8 @@ class GdbValue:
             f = fields[i]
             i += 1
             depth3 = depth2
+
+            mod_f = Mod()
             if mod.sw is None:
                 cast = None
             else:
@@ -576,6 +588,10 @@ class GdbValue:
                     continue
                      
                 cast = mod.sw.cast_fields.get(f.name)
+                transform = mod.sw.trans_fields.get(f.name)
+                if not transform is None:
+                    mod_f.transform = transform
+                mod_f.ranges = mod.sw.range_fields.get(f.name)
             
             value_f = ValueOut(f.name)
             value_f.print_name(indent + printcfg.indent_pre)
@@ -585,7 +601,7 @@ class GdbValue:
                 else:
                     felem = GdbValue(self.v[f.name]).cast(cast)
 
-                felem.print_v(f.name, depth3, expr, pos, False, True, indent + printcfg.indent_pre)
+                felem.print_v(f.name, depth3, expr, pos, False, True, indent + printcfg.indent_pre, mod_f)
             except Exception as e:
                 s = str(e)
                 if s.find("There is no member or method named") >= 0:

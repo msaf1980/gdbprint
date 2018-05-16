@@ -97,11 +97,9 @@ def register_printer(obj):
  #   debugprinters_typemap[name] = typename
  
 def resolve_printer(name):
-    print_debug(name)
     return debugprinters.get(name)
 
 def resolve_printer_typename(typename):
-    print_debug(typename)
     return debugprinters_typenames.get(typename)
 
 def show_printers():

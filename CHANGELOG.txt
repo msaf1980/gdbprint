@@ -3,7 +3,8 @@ master
 Support for python 3.5
 'p_s' and 'p_g' commands for display all local and global variables
 Expressions in ranges
-Transform <hex> - hex view for decimal numbers
+Transform <hex> Hex view for decimal numbers and address
+Transform <num> Decimal view for decimal numbers and address
 
 v.0.1.0
 Support for Python 2.7
