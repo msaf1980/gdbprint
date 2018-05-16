@@ -1,11 +1,12 @@
 (gdb) file test
 (gdb) py sys.path.insert(0, '..')
 (gdb) py import gdbprint
-(gdb) break 77
+load gdbprint 0.1.1
+(gdb) break 91
 (gdb) run
-Breakpoint: file test.cpp, line 77.
+Breakpoint: file test.cpp, line 91.
 
-Breakpoint 1, main at test.cpp:77
+Breakpoint 1, main at test.cpp:91
 
 (gdb) p_s verbose 2
 (gdb) p_s w 0
@@ -27,14 +28,27 @@ frame = "main(int, char**)" {
         },
     },
     "b" = (bool) true,
+    "base" = (char *) <0xHEX> { str_len:15 [0:399] = "Василий Vasiliy" + \0 },
     "dnum" = (double) 1.23e+21,
     "fnum" = (float) 1.23000005e+21,
+    "n" = (unsigned long) 2,
     "num" = (unsigned long) 0,
     "ptr_arr" = (int *) <0xHEX> { ptr = 10 },
     "ptr_arr_2d" = (int **) <0xHEX> { ptr = <0xHEX> { ptr = 1 } },
     "ptr_fnum" = (float *) <0xHEX> { ptr = 1.23000005e+21 },
     "ptr_null" = (int *) <0x0>,
     "ptr_void_arr_2d" = (void *) <0xHEX>,
+    "size" = (unsigned long) 1,
+    "st_p_arr" = (st_p [2]) <0xHEX> {
+        [0] = (st_p) <0xHEX> {
+            "start" = (char *) <0xHEX> { str_len:15 [0:399] = "Василий Vasiliy" + \0 },
+            "end" = (char *) <0xHEX> { str_len:13 [0:399] = "силий Vasiliy" + \0 }
+        },
+        [1] = (st_p) <0xHEX> {
+            "start" = (char *) <0xHEX> { str_len:13 [0:399] = "силий Vasiliy" + \0 },
+            "end" = (char *) <0xHEX> { str_len:12 [0:399] = "илий Vasiliy" + \0 }
+        },
+    },
     "st_ptr" = (st *) <0xHEX> { ptr =  {
         "i" = (int) 1000,
         "ui" = (unsigned int) 1000,
@@ -272,3 +286,5 @@ frame = "global" {
     [5] = 232 "и",
     [8] = 86 "V",
 }
+(gdb) p_v wstr[n-1:n*2]
+"wstr" = (wchar_t *) <0xHEX> { [1:4] = L"асил" }

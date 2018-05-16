@@ -35,24 +35,42 @@ def filters_check(v, filters):
                 return action
         return action
 
-def calc_range(r0, r1, size):
+def calc_range(r0, r1, size, visitor = None):
     #print_str(str(r0) + " " + str(r1) + " " + str(size) + "\n")
+    if r0.t == FType.NUM:
+        start = r0.v
+    elif visitor is None or r0.t != FType.EXPR:
+        raise ValueError("%s is not supported as range start" % str(r2))
+    else:
+        try:
+            v = r0.eval(visitor)
+            start = v[0].num()
+        except:
+            raise ValueError("%s is not a number at range start" % str(r0))
+
+    if r1.t == FType.NUM:
+        end = r1.v
+    elif visitor is None or r1.t != FType.EXPR:
+        raise ValueError("%s is not supported as range end" % str(r1))
+    else:
+        try:
+            v = r1.eval(visitor)
+            end = v[0].num()
+        except:
+            raise ValueError("%s is not a number at range end" % str(r1))
+
     if size == -1 or size is None:
-        return (r0, r1)
+        return (start, end)
     elif size == 0:
         return (-1, -1)
     else:
-        if r0 > size - 1:
-            if r1 > size -1:
+        if start > size - 1:
+            if end > size -1:
                 return (-1, -1)
             else:
                 start = size - 1
-        else:
-            start = r0
-        if r1 > size - 1:
+        if end > size - 1:
             end = size - 1
-        else:
-            end = r1
         return (start, end)
 
 
@@ -562,10 +580,15 @@ class Range:
 
     def __init__(self, a1, a2 = None, next_v = None):
         self.init()
-        if a2 is None:
+        if a2 is None and next_v is None:
+            #print_str(str(a1) + "\n")
             self.init_str(a1)
         else:
-            self.range.append((a1, a2))
+            if a1 is None:
+                a1 = 0
+            if a2 is None:
+                a2 = 0
+            self.range.append((self.r(a1), self.r(a2)))
             self.next_v = next_v
 
     def init_str(self, s):
@@ -584,27 +607,33 @@ class Range:
             if len(ri) > 2:
                 raise ValueError("multiple :")
             elif len(ri) == 2:
-                r1 = None
-                r2 = None
-                try:
-                    r1 = int(ri[0])
-                except ValueError:
-                    raise ValueError("range format error: '%s' is not a number" % ri[0])
-                try:
-                    r2 = int(ri[1])
-                except ValueError:
-                    raise ValueError("range format error: '%s' is not a number" % ri[1])
-    
+                if ri[1] == '':
+                    raise ValueError("range incorrect: %s" % str(s))
+                if ri[0] == '':
+                    r1 = self.r(0)
+                else:
+                    r1 = self.r(ri[0])
+                r2 = self.r(ri[1])
                 self.range.append((r1, r2))
             else:
-                try:
-                    r1 = int(ri[0])
-                    if r[0] == ':':
-                        self.range.append((0, r1))
-                    else:
-                        self.range.append((r1, r1))
-                except ValueError:
-                    raise ValueError("range format error: '%s' is not a number" % ri[0])
+                r1 = self.r(ri[0])
+                self.range.append((r1, r1))
+
+    def r(self, s):
+        try:
+            return FType(longx(s), FType.NUM)
+        except ValueError:
+            try:
+                cmd_parse = CommandParser()
+                return Expr(cmd_parse.parse1(s))
+            except:
+                raise ValueError("range format error: '%s' is not valid" % str(s))
+
+    def str_r(self, r):
+        if r.t == FType.NUM:
+            return str(r.v)
+        else:
+            return str(r)
 
     def __str__(self):
         s = "[ "
@@ -616,9 +645,9 @@ class Range:
                 s += ", "
 
             if r[0] == r[1]:
-                s += str(r[0])
+                s += self.str_r(r[0])
             else:
-                s += "%d:%d" % (r[0], r[1])
+                s += "%s:%s" % (self.str_r(r[0]), self.str_r(r[1]))
 
         if not self.next_v is None:
             s += " --> %s" % self.next_v
@@ -1042,6 +1071,18 @@ class CommandParser:
             tree.append((e, pname))
 
         return tree
+
+    def parse1(self, arg):
+        lex = shlex.shlex(arg)
+        s = list()
+        for l in lex:
+            s.append(l)
+
+        if len(s) > 0:
+            (e, pos, pname) = self.__parse_tree(s)
+            return e
+        else:
+            return None
 
 #
 # @val arg  Tokenised string list to parse

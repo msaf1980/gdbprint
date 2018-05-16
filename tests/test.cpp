@@ -16,6 +16,11 @@ typedef struct st {
 	double d;
 } st;
 
+typedef struct st_p {
+	char *start;
+	char *end;
+} st_p;
+
 union ub {
     unsigned int i;
     unsigned char b[4];
@@ -73,6 +78,15 @@ int main(int argc, char* argv[]) {
         void *st_void_ptr = &struct_ex;
         void **st_void_2ptr = &st_void_ptr;
         st *st_ptr = &struct_ex;
+
+	size_t n = 2;
+	size_t size = sizeof(char);
+	char *base = str1251;
+	st_p st_p_arr[2];
+	st_p_arr[0].start = base;
+	st_p_arr[0].end = st_p_arr[0].start + size * 2;
+	st_p_arr[1].start = st_p_arr[0].end;
+	st_p_arr[1].end = st_p_arr[1].start + size;
 
 	return 0;
 }

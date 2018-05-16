@@ -1,7 +1,8 @@
 master
 
-Add support for python 3.5
-Add 'p_s' and 'p_g' command for display all local and global variables
+Support for python 3.5
+'p_s' and 'p_g' commands for display all local and global variables
+Expressions in ranges
 
 v.0.1.0
 Support for Python 2.7

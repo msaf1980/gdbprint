@@ -1,3 +1,4 @@
+import sys
 from distutils.cmd import Command
 from setuptools import setup
 from distutils.command.clean import clean
@@ -13,9 +14,11 @@ class RunTests(Command):
         cdir = path.dirname(path.realpath(__file__))
         cwd = path.join(cdir, 'tests')
         chdir(cwd)
-        call(["make"])
+        if call(["make"]):
+    	    raise Exception("make failed")
         for test in ['test_testout', 'test_testout_v2']:
-            print(test)
+            sys.stdout.write(test + "\n")
+            sys.stdout.flush()
             test = path.join(cwd, test)
             fg = open(test+'.gdb', 'r')
             fi = open(test+'.in', 'w')

@@ -131,7 +131,7 @@ class CommandParserCmd(gdb.Command):
 
     def invoke (self, arg, from_tty):
         try:
-            visitor = GdbVisitor()
+            visitor = GdbVisitor
             tree = cmd_parse.parse(arg)
             if printcfg.debug > 0:
                 for t in tree:
@@ -166,7 +166,7 @@ class LocalCommand(gdb.Command):
 
     def invoke (self, arg, from_tty):
         try:
-            visitor = GdbVisitor()
+            visitor = GdbVisitor
             visitor.print_frame(False)
         except:
             if printcfg.debug:
@@ -188,7 +188,7 @@ class GlobalCommand(gdb.Command):
 
     def invoke (self, arg, from_tty):
         try:
-            visitor = GdbVisitor()
+            visitor = GdbVisitor
             visitor.print_frame(True)
         except:
             if printcfg.debug:
@@ -196,6 +196,7 @@ class GlobalCommand(gdb.Command):
             raise
 
 
+print_str("load %s %s\n" % (printcfg.name, printcfg.version))
 cmd_parse = CommandParser()
 CommandParserSet()
 CommandParserCmd()

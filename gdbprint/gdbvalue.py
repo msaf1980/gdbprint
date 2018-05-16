@@ -101,7 +101,6 @@ class GdbValue:
             return Filter.PASS
         else:
             return Filter.SKIP
- 
 
     def deref(self):
         return GdbValue(self.v.dereference())
@@ -136,6 +135,13 @@ class GdbValue:
                 raise ValueError("<unresolve to '" + cast + "': " + traceback.format_exc() + ">")
             else:
                 raise ValueError("<unresolve to '" + cast + "': " + str(e) + ">")
+
+
+    def num(self):
+        if self.vtype.code == gdb.TYPE_CODE_INT:
+            return longx(self.v)
+        else:
+            raise ValueError("not a number")
 
     def print_v(self, name, depth, expr, pos, print_name = True, print_head = True, indent = "", mod = None):
         self.value = ValueOut()
@@ -259,7 +265,7 @@ class GdbValue:
         self.value.print_value()
 
         for r in ranges.range:
-            (start, end) = calc_range(r[0], r[1], self.size)
+            (start, end) = calc_range(r[0], r[1], self.size, GdbVisitor)
             val_range = ValueOut()
             if start == -1:
                 if i == 0:
@@ -330,7 +336,7 @@ class GdbValue:
         self.value.print_value()
 
         for r in ranges.range:
-            (start, end) = calc_range(r[0], r[1], self.size)
+            (start, end) = calc_range(r[0], r[1], self.size, GdbVisitor)
             val_range = ValueOut()
             if start == -1:
                 if i == 0:
@@ -461,7 +467,7 @@ class GdbValue:
         
         uchar = None
         for r in mod.ranges.range:
-            (start, end) = calc_range(r[0], r[1], self.size)
+            (start, end) = calc_range(r[0], r[1], self.size, GdbVisitor)
             if start == -1:
                 continue
 
@@ -660,7 +666,7 @@ class GdbValue:
         uchar = None
 
         for r in mod.ranges.range:
-            (start, end) = calc_range(r[0], r[1], self.value.size)
+            (start, end) = calc_range(r[0], r[1], self.value.size, GdbVisitor)
             if start == -1:
                 continue
 
@@ -741,7 +747,7 @@ class GdbValue:
 
         i = 0
         for r in mod.ranges.range:
-            (start, end) = calc_range(r[0], r[1], self.value.str_len)
+            (start, end) = calc_range(r[0], r[1], self.value.str_len, GdbVisitor)
             if start == -1:
                 if mod.transform.v == Transform.ARRAY or i > 0:
                     continue
@@ -859,7 +865,7 @@ class GdbValue:
         self.value.subtype = SubType.MULTI
         self.value.print_value()
         for r in mod.ranges.range:
-            (start, end) = calc_range(r[0], r[1], self.value.size)
+            (start, end) = calc_range(r[0], r[1], self.value.size, GdbVisitor)
             if start == -1 or start > end:
                 continue
             
@@ -920,7 +926,7 @@ class GdbValue:
         self.value.print_value()
 
         for r in mod.ranges.range:
-            (start, end) = calc_range(r[0], r[1], self.value.size)
+            (start, end) = calc_range(r[0], r[1], self.value.size, GdbVisitor)
             if start == -1 or start > end:
                 continue
             
@@ -970,7 +976,7 @@ class GdbValue:
         self.value.print_value()
 
         for r in mod.ranges.range:
-            (start, end) = calc_range(r[0], r[1], -1)
+            (start, end) = calc_range(r[0], r[1], -1, GdbVisitor)
             if start == -1 or start > end:
                 continue
             e = None
@@ -1022,7 +1028,7 @@ class GdbValue:
         self.value.print_value()
 
         for r in mod.ranges.range:
-            (start, end) = calc_range(r[0], r[1], self.value.size)
+            (start, end) = calc_range(r[0], r[1], self.value.size, GdbVisitor)
             if start == -1 or start > end:
                 continue
             
@@ -1070,7 +1076,7 @@ class GdbValue:
         self.value.print_value()
 
         for r in mod.ranges.range:
-            (start, end) = calc_range(r[0], r[1], -1)
+            (start, end) = calc_range(r[0], r[1], -1, GdbVisitor)
             if start == -1 or start > end:
                 continue
           
@@ -1107,17 +1113,21 @@ class GdbValue:
 
 
 class GdbVisitor:
-    def eval(self, v):
+    @staticmethod
+    def eval(v):
         return GdbValue(gdb.parse_and_eval(v))
 
-    def from_addr(self, v):
+    @staticmethod
+    def from_addr(v):
         return GdbValue(gdb.Value(v))
 
-    def init(self, s):
+    @staticmethod
+    def init(s):
         v = GdbValue(s)
         return v
 
-    def oper(self, flist, op):
+    @staticmethod
+    def oper(flist, op):
         for f in flist:
             if f.t == FType.VAL:
                 if not gdbutils.is_iter_typecode(f.vtype.code):
@@ -1134,16 +1144,19 @@ class GdbVisitor:
         elif op.t == FType.DIV:
             v = flist[0].v / flist[1].v
         else:
-            raise ValueError("non supported operator %s for %s" % (str(op), str(self)))
+            raise ValueError("non supported operator %s for %s" % (str(op), str(GdbVisitor)))
         return GdbValue(v)
 
-    def deref(self, p):
+    @staticmethod
+    def deref(p):
         return GdbValue(p.v.dereference())
 
-    def ref(self, r):
+    @staticmethod
+    def ref(r):
         return GdbValue(r.v.referenced_value())
 
-    def list_locals(self):
+    @staticmethod
+    def list_locals():
         frame = gdb.selected_frame()
         frame_func  = None
         try:
@@ -1185,7 +1198,8 @@ class GdbVisitor:
 
         return items
 
-    def list_globals(self):
+    @staticmethod
+    def list_globals():
         frame = gdb.selected_frame()
 
         try:
@@ -1224,13 +1238,14 @@ class GdbVisitor:
 
         return items
 
-    def print_frame(self, is_global, depth = None):
+    @staticmethod
+    def print_frame(is_global, depth = None):
         if depth is None:
             depth = printcfg.depth
         if is_global:
-            values = self.list_globals()
+            values = GdbVisitor.list_globals()
         else:
-            values = self.list_locals()
+            values = GdbVisitor.list_locals()
         l = len(values)
         if values is None or l == 0:
             return

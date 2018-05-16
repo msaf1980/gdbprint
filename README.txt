@@ -98,7 +98,7 @@ Print linked list with iterator iter.next (hide iter)
   p_v name[range --> iter.next ].((*iter))
 
 Range format
-[start:end] Range with fixed numbers
+[start:end] Range with positive numbers (also allow exrpession, resolved to positive numeric variable)
 [index] One element. Equal to [index:index]
 [start1:end1, start2:end2, ..] Several with fixed numbers
 [start:end --> next] process linked list structure with next iterator 
@@ -163,9 +163,13 @@ p_v ptr_arr_2d<arr>[0:1]<arr>[0:2]   Print 2d-array elements (transform from dou
 p_v (int *) ptr_void + 1             Print poiter + 1 element
 
 p_v argv<arr>[] @                    Print array elements (stop on null elements)
+p_v argv<arr>[:argc-1]               Print array elements in [0:argc-1] range
 
 p_v str<utf8>[0:5]                   Print uft-8 substring
 p_v str<arr,utf8>[[0:5]              Print array elements (try to decode elements sequence as uft-8)
+
+p_v wstr[1:n]                         Print substring in [1:n] range (n - positive numeric variable)
+p_v wstr[:n - 1]                      Print substring in [0:n - 1] range (n - positive numeric variable)
 
 Print linked list (with installed gdbprint_c)
 p_v tNode_head <list> [-->next].((*next))

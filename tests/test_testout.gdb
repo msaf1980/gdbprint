@@ -1,11 +1,12 @@
 (gdb) file test
 (gdb) py sys.path.insert(0, '..')
 (gdb) py import gdbprint
-(gdb) break 77
+load gdbprint 0.1.1
+(gdb) break 91
 (gdb) run
-Breakpoint: file test.cpp, line 77.
+Breakpoint: file test.cpp, line 91.
 
-Breakpoint 1, main at test.cpp:77
+Breakpoint 1, main at test.cpp:91
 
 (gdb) p_s verbose 0
 (gdb) p_s w 0
@@ -27,14 +28,27 @@ frame = "main(int, char**)" {
         },
     },
     "b" = true,
+    "base" = { [0:399] = "Василий Vasiliy" + \0 },
     "dnum" = 1.23e+21,
     "fnum" = 1.23000005e+21,
+    "n" = 2,
     "num" = 0,
     "ptr_arr" = { ptr = 10 },
     "ptr_arr_2d" = { ptr = { ptr = 1 } },
     "ptr_fnum" = { ptr = 1.23000005e+21 },
     "ptr_null" = <0x0>,
     "ptr_void_arr_2d" = <0xHEX>,
+    "size" = 1,
+    "st_p_arr" = {
+        [0] = {
+            "start" = { [0:399] = "Василий Vasiliy" + \0 },
+            "end" = { [0:399] = "силий Vasiliy" + \0 }
+        },
+        [1] = {
+            "start" = { [0:399] = "силий Vasiliy" + \0 },
+            "end" = { [0:399] = "илий Vasiliy" + \0 }
+        },
+    },
     "st_ptr" = { ptr = {
         "i" = 1000,
         "ui" = 1000,
@@ -272,3 +286,5 @@ frame = "global" {
     [5] = 232 "и",
     [8] = 86 "V",
 }
+(gdb) p_v wstr[n-1:n*2]
+"wstr" = { [1:4] = L"асил" }
