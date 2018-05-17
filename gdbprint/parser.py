@@ -1005,14 +1005,15 @@ class Struct:
         if not s is None and s != "":
             fall = False
             for f in s.split(','):
+                f = f.strip(' ')
                 if f == '':
                     continue
                 elif f == "*":
                     fall = True
                 elif f[0] == "!":
-                    self.hide_fields.add(f[1:])
+                    self.hide_fields.add(f[1:].strip(' '))
                 elif f[0] == "*":
-                    self.noderef_fields.add(f[1:])
+                    self.noderef_fields.add(f[1:].strip(' '))
                 else:
                     if f[0] == "\"" and f[-1] == "\"":
                         f = f[1:-1]
@@ -1071,9 +1072,9 @@ class Struct:
 
             cast = self.cast_fields.get(f)
             if not cast is None:
-                s += "(%s)" % str(cast)
+                s += "(%s) " % str(cast)
 
-            s += " %s" % f
+            s += "%s" % f
 
             t = self.trans_fields.get(f)
             if not t is None:
@@ -1084,11 +1085,15 @@ class Struct:
                 s += str(r)
 
         if len(self.hide_fields) > 0:
-            if len(s) > 3:
+            if first:
+                first = False
+            else:
                 s += ", "
             s += ", ".join("!" + x for x in self.hide_fields)
         if len(self.noderef_fields) > 0:
-            if len(s) > 3:
+            if first:
+                first = False
+            else:
                 s += ", "
             s += ", ".join("*" + x for x in self.noderef_fields)
         s += " ))"

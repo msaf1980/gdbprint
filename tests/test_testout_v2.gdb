@@ -2,11 +2,11 @@
 (gdb) py sys.path.insert(0, '..')
 (gdb) py import gdbprint
 load gdbprint 0.1.1
-(gdb) break 91
+(gdb) break 99
 (gdb) run
-Breakpoint: file test.cpp, line 91.
+Breakpoint: file test.cpp, line 99.
 
-Breakpoint 1, main at test.cpp:91
+Breakpoint 1, main at test.cpp:99
 
 (gdb) p_s verbose 2
 (gdb) p_s w 0
@@ -42,11 +42,11 @@ frame = "main(int, char**)" {
     "st_p_arr" = (st_p [2]) <0xHEX> {
         [0] = (st_p) <0xHEX> {
             "start" = (char *) <0xHEX> { str_len:15 [0:399] = "Василий Vasiliy" + \0 },
-            "end" = (char *) <0xHEX> { str_len:13 [0:399] = "силий Vasiliy" + \0 }
+            "end" = (char *) <0xHEX> { str_len:13 [0:399] = "силий Vasiliy" + \0 },
         },
         [1] = (st_p) <0xHEX> {
             "start" = (char *) <0xHEX> { str_len:13 [0:399] = "силий Vasiliy" + \0 },
-            "end" = (char *) <0xHEX> { str_len:12 [0:399] = "илий Vasiliy" + \0 }
+            "end" = (char *) <0xHEX> { str_len:12 [0:399] = "илий Vasiliy" + \0 },
         },
     },
     "st_ptr" = (st *) <0xHEX> { ptr =  {
@@ -55,7 +55,11 @@ frame = "main(int, char**)" {
         "l" = (long) 1000,
         "ul" = (unsigned long) 1000,
         "f" = (float) 1000,
-        "d" = (double) 1000
+        "d" = (double) 1000,
+        "s" = (char [3]) <0xHEX> { str_len:0 [0:2] = "" + \0 },
+        "inc" = (st_inc) <0xHEX> {
+            "inc" = (int) 0,
+        },
     } },
     "st_void_2ptr" = (void **) <0xHEX> { ptr = (void *) <0xHEX> },
     "st_void_ptr" = (void *) <0xHEX>,
@@ -67,11 +71,15 @@ frame = "main(int, char**)" {
         "l" = (long) 1000,
         "ul" = (unsigned long) 1000,
         "f" = (float) 1000,
-        "d" = (double) 1000
+        "d" = (double) 1000,
+        "s" = (char [3]) <0xHEX> { str_len:0 [0:2] = "" + \0 },
+        "inc" = (st_inc) <0xHEX> {
+            "inc" = (int) 0,
+        },
     },
     "u" = (ub) <0xHEX> {
         "i" = (unsigned int) 4294901760,
-        "b" = (unsigned char [4]) <0xHEX> { str_len:0 [0:3] = "" + \0 }
+        "b" = (unsigned char [4]) <0xHEX> { str_len:0 [0:3] = "" + \0 },
     },
     "wstr" = (wchar_t *) <0xHEX> { str_len:30 [0:399] = L"Василий Пупкин, Vasiliy Pupkin" + \0 },
 }
@@ -137,7 +145,11 @@ frame = "global" {
     "l" = (long) 1000,
     "ul" = (unsigned long) 1000,
     "f" = (float) 1000,
-    "d" = (double) 1000
+    "d" = (double) 1000,
+    "s" = (char [3]) <0xHEX> { str_len:0 [0:2] = "" + \0 },
+    "inc" = (st_inc) <0xHEX> {
+        "inc" = (int) 0,
+    },
 } }
 (gdb) p_v gl_arr[] { _ >= 67 }
 "gl_arr" = (int [12]) <0xHEX> {
@@ -294,3 +306,20 @@ frame = "global" {
 "- 1" = -0x1
 (gdb) p_v 1-n<hex>
 "1 - n" = (unsigned long) -0x1
+(gdb) p_v struct_ex.(( !i, !ui, !inc ))
+"struct_ex" = (st) <0xHEX> {
+    "l" = (long) 1000,
+    "ul" = (unsigned long) 1000,
+    "f" = (float) 1000,
+    "d" = (double) 1000,
+    "s" = (char [3]) <0xHEX> { str_len:0 [0:2] = "" + \0 },
+}
+(gdb) p_v struct_ex.(( !i, !ui, *inc ))
+"struct_ex" = (st) <0xHEX> {
+    "l" = (long) 1000,
+    "ul" = (unsigned long) 1000,
+    "f" = (float) 1000,
+    "d" = (double) 1000,
+    "s" = (char [3]) <0xHEX> { str_len:0 [0:2] = "" + \0 },
+    "inc" = (st_inc) <0xHEX> {inc = 0},
+}

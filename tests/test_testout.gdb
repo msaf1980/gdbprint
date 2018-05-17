@@ -2,11 +2,11 @@
 (gdb) py sys.path.insert(0, '..')
 (gdb) py import gdbprint
 load gdbprint 0.1.1
-(gdb) break 91
+(gdb) break 99
 (gdb) run
-Breakpoint: file test.cpp, line 91.
+Breakpoint: file test.cpp, line 99.
 
-Breakpoint 1, main at test.cpp:91
+Breakpoint 1, main at test.cpp:99
 
 (gdb) p_s verbose 0
 (gdb) p_s w 0
@@ -42,11 +42,11 @@ frame = "main(int, char**)" {
     "st_p_arr" = {
         [0] = {
             "start" = { [0:399] = "Василий Vasiliy" + \0 },
-            "end" = { [0:399] = "силий Vasiliy" + \0 }
+            "end" = { [0:399] = "силий Vasiliy" + \0 },
         },
         [1] = {
             "start" = { [0:399] = "силий Vasiliy" + \0 },
-            "end" = { [0:399] = "илий Vasiliy" + \0 }
+            "end" = { [0:399] = "илий Vasiliy" + \0 },
         },
     },
     "st_ptr" = { ptr = {
@@ -55,7 +55,11 @@ frame = "main(int, char**)" {
         "l" = 1000,
         "ul" = 1000,
         "f" = 1000,
-        "d" = 1000
+        "d" = 1000,
+        "s" = { [0:2] = "" + \0 },
+        "inc" = {
+            "inc" = 0,
+        },
     } },
     "st_void_2ptr" = { ptr = <0xHEX> },
     "st_void_ptr" = <0xHEX>,
@@ -67,11 +71,15 @@ frame = "main(int, char**)" {
         "l" = 1000,
         "ul" = 1000,
         "f" = 1000,
-        "d" = 1000
+        "d" = 1000,
+        "s" = { [0:2] = "" + \0 },
+        "inc" = {
+            "inc" = 0,
+        },
     },
     "u" = {
         "i" = 4294901760,
-        "b" = { [0:3] = "" + \0 }
+        "b" = { [0:3] = "" + \0 },
     },
     "wstr" = { [0:399] = L"Василий Пупкин, Vasiliy Pupkin" + \0 },
 }
@@ -137,7 +145,11 @@ frame = "global" {
     "l" = 1000,
     "ul" = 1000,
     "f" = 1000,
-    "d" = 1000
+    "d" = 1000,
+    "s" = { [0:2] = "" + \0 },
+    "inc" = {
+        "inc" = 0,
+    },
 } }
 (gdb) p_v gl_arr[] { _ >= 67 }
 "gl_arr" = {
@@ -294,3 +306,25 @@ frame = "global" {
 "- 1" = -0x1
 (gdb) p_v 1-n<hex>
 "1 - n" = -0x1
+(gdb) p_v struct_ex.(( i, ui ))
+"struct_ex" = {
+    "i" = 1000,
+    "ui" = 1000,
+}
+(gdb) p_v struct_ex.(( !i, !ui, !inc ))
+"struct_ex" = {
+    "l" = 1000,
+    "ul" = 1000,
+    "f" = 1000,
+    "d" = 1000,
+    "s" = { [0:2] = "" + \0 },
+}
+(gdb) p_v struct_ex.(( !i, !ui, *inc ))
+"struct_ex" = {
+    "l" = 1000,
+    "ul" = 1000,
+    "f" = 1000,
+    "d" = 1000,
+    "s" = { [0:2] = "" + \0 },
+    "inc" = <0xHEX> {inc = 0},
+}

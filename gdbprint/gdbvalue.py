@@ -170,10 +170,14 @@ class GdbValue:
 
             if mod is None:
                 mod = Mod()
+            
+            if mod.transform.v is None:
                 pos = mod.get_transform(expr, pos)
-            else:
-                if printcfg.debug > 2 and not mod.transform is None:
-                    print_obj(mod.transform)
+            
+            #if printcfg.debug > 2:
+            #    print_str("depth %d\n" % depth)
+                #if not mod.transform is None:
+                #    print_obj(mod.transform)
 
             if not mod.transform is None and mod.transform.v == Transform.SIMPLE:
                 self.value.value = str(self.v)
@@ -192,9 +196,12 @@ class GdbValue:
                 if print_head:
                     self.value.address = self.v.address
 
-                #self.value.print_value()
-                self.print_struct(depth, expr, pos, indent, mod)
-                return
+                if depth < 0:
+                    self.value.value = str(self.v)
+                    self.value.print_value(False, False, True)
+                else:
+                    self.print_struct(depth, expr, pos, indent, mod)
+                    return
             elif str(self.vtype) in ('char', 'signed char', 'unsigned char'):
                 self.value.value = char_to_string(self.v, printcfg.codepage)
                 self.value.print_value()
@@ -537,6 +544,9 @@ class GdbValue:
         self.value.print_post(indent)
 
     def print_struct(self, depth, expr, pos, indent, mod):
+        if printcfg.debug > 2:
+            print_obj(mod)
+
         if not mod.transform is None and mod.transform.v == Transform.SIMPLE:
             self.value.value = str(self.v)
             self.value.print_all(indent)
@@ -566,13 +576,11 @@ class GdbValue:
     def print_fields(self, depth, expr, pos, indent, mod):
         pos = mod.get_struct(expr, pos)
         fields = self.v.type.fields()
+        #fields.sort(key=lambda f: f.name)
         depth2 = mod.get_depth(expr, pos, depth)
         self.value.subtype = SubType.MULTI
         self.value.print_value()
-        i  = 0
-        while i < len(fields):
-            f = fields[i]
-            i += 1
+        for f in fields:
             depth3 = depth2
 
             mod_f = Mod()
@@ -614,10 +622,7 @@ class GdbValue:
                 value_f.print_all(indent + printcfg.indent_pre)
 
             value_f.print_post()
-            if i == len(fields):
-                value_f.print_endline()
-            else:
-                value_f.print_endline(True, True)
+            value_f.print_endline(True, True)
 
         self.value.print_post(indent)
 
@@ -883,6 +888,11 @@ class GdbValue:
             value_err.error = error_format(e)
             value_err.print_all(indent)
             return
+
+        #if printcfg.debug > 2:
+        #    print_str("\ndepth %d\n" % depth2)
+        #    if not mod is None:
+        #        print_obj(mod)
 
         self.value.subtype = SubType.MULTI
         self.value.print_value()

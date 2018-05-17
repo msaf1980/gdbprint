@@ -7,6 +7,10 @@
 #include <stdlib.h>
 #include <errno.h>
 
+typedef struct st_inc {
+	int inc;
+} st_inc;
+
 typedef struct st {
 	int i;
 	unsigned ui;
@@ -14,11 +18,14 @@ typedef struct st {
 	unsigned long ul;
 	float f;
 	double d;
+	char s[3];
+	st_inc inc;
 } st;
 
 typedef struct st_p {
 	char *start;
 	char *end;
+
 } st_p;
 
 union ub {
@@ -75,6 +82,7 @@ int main(int argc, char* argv[]) {
         struct_ex.ul = 1000L;
         struct_ex.f = 1000.0F;
         struct_ex.d = 1000.0D;
+	struct_ex.inc.inc = 0;
         void *st_void_ptr = &struct_ex;
         void **st_void_2ptr = &st_void_ptr;
         st *st_ptr = &struct_ex;
