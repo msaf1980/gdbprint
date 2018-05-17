@@ -73,16 +73,20 @@ def calc_range(r0, r1, size, visitor = None):
             end = size - 1
         return (start, end)
 
-def num2str(n, mod = None):
-    if not mod is None and not mod.transform is None and mod.transform.v == Transform.HEX:
-        if n >= 0:
-            return "0x%x" % n
-        else:
-            return "-0x%x" % abs(n)
-    elif not mod is None and not mod.transform is None and mod.transform.v == Transform.NUM:
-        return "%d" % n
-    else:
-        return str(n)
+def num2str(s, mod = None):
+    try:
+        n = longx(s)
+        if not mod is None and not mod.transform is None and mod.transform.v == Transform.HEX:
+            if n >= 0:
+                return "0x%x" % n
+            else:
+                return "-0x%x" % abs(n)
+        elif not mod is None and not mod.transform is None and mod.transform.v == Transform.NUM:
+            return "%d" % n
+    except:
+        pass
+
+    return str(s)
 
 
 class Mod:

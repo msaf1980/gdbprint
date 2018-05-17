@@ -23,7 +23,7 @@ from .parser import calc_range
 from .parser import num2str
 from .parser import Filter, CmpVal, FType, Transform, Range, Mod, ValueOut, SubType
 
-def calc_cwidth(vtype):
+def calc_cwidth(vtype, mod = None):
     cwidth = 0
     if str(vtype) in ('char', 'signed char', 'unsigned char'):
         num_type = 1
@@ -42,6 +42,12 @@ def calc_cwidth(vtype):
             cwidth = 6 + len(str(sys.maxsize))
         else:
             num_type = -1
+
+    if not mod is None and not mod.transform.v is None and num_type > 0 and \
+                                mod.transform.v in (Transform.HEX, Transform.NUM):
+            num_type = 0
+            cwidth = 6 + len(str(sys.maxsize))
+
 
     return (num_type, cwidth)
 
@@ -187,7 +193,7 @@ class GdbValue:
                                          gdb.TYPE_CODE_REF, gdb.TYPE_CODE_ARRAY):
                     self.value.value = num2str(self.v.address, mod)
                 elif self.vtype.code in (gdb.TYPE_CODE_INT, gdb.TYPE_CODE_PTR, gdb.TYPE_CODE_ENUM):
-                    self.value.value = num2str(longx(self.v), mod)
+                    self.value.value = num2str(self.v, mod)
                 else:
                     raise ValueError("unsupported transform: %s" % str(mod.transform))
 
@@ -267,7 +273,7 @@ class GdbValue:
                 self.value.value = "%s (%d)" % (str(self.v), longx(self.v))
                 self.value.print_value()
             elif self.vtype.code == gdb.TYPE_CODE_INT:
-                self.value.value = num2str(longx(self.v), mod)
+                self.value.value = num2str(self.v, mod)
                 self.value.print_value()
             else:
                 self.value.value = str(self.v)
@@ -428,7 +434,7 @@ class GdbValue:
             value_err.error = error_format(e)
             value_err.print_all("", True, True)
  
-    def print_array_num_elem(self, velem, i, w, end, indent = "", char_type = 0, cp = None, uchar = None, cwidth = 0):
+    def print_array_num_elem(self, velem, i, w, end, indent = "", char_type = 0, cp = None, uchar = None, cwidth = 0, mod = None):
         vchar = ""
         value = ValueOut("[%d]" % i)
         if char_type == 1:
@@ -455,7 +461,7 @@ class GdbValue:
             value.value = str(velem.v)
             value.print_all(indent + printcfg.indent_pre, True, True)
         else:
-            value.value = str(velem.v)
+            value.value = num2str(velem.v, mod)
             if printcfg.out_type == OutType.TEXT and printcfg.width > 1 and cwidth > 0:
                 s = value.name + " = " + value.value
                 if len(s) >= cwidth:
@@ -485,9 +491,11 @@ class GdbValue:
         pos = mod.get_fetch(expr, pos, printcfg.fetch_array)
         pos = mod.get_filters(expr, pos)
         depth2 = mod.get_depth(expr, pos, depth)
+        mod.get_transform(expr, pos)
 
-        (num_type, cwidth) = calc_cwidth(self.target.vtype)
-        
+        (num_type, cwidth) = calc_cwidth(self.target.vtype, mod)
+        #mod = Mod()
+
         uchar = None
         for r in mod.ranges.range:
             (start, end) = calc_range(r[0], r[1], self.size, GdbVisitor)
@@ -520,8 +528,8 @@ class GdbValue:
                     if action == Filter.SKIP:
                         n += decr
                         continue
-                    if num_type != -1:
-                        w = self.print_array_num_elem(velem, n, w, end, indent, num_type, cp_str, uchar, cwidth)
+                    if num_type > -1:
+                        w = self.print_array_num_elem(velem, n, w, end, indent, num_type, cp_str, uchar, cwidth, mod)
                     else:
                         velem.print_v("[%d]" % n, depth2, expr, pos, True, True, indent + printcfg.indent_pre)
                         self.value.print_endline(True, True)
