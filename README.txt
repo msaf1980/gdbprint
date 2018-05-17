@@ -27,7 +27,9 @@ Dereference variable
 
 Print structure fields only
   p_v name .(( field1, field2 ))
-  
+Can use cast, transform and single range like (cast) field<transform>[start:end]
+  p_v name .(( field1, field2 ))
+
 Hide structure fields
   p_v name .(( !field1, !field2, .. ))
   

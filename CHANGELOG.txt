@@ -5,6 +5,7 @@ v.0.1.1
 Support for python 3.5
 'p_s' and 'p_g' commands for display all local and global variables
 Expressions in ranges
+Cast, transform and range in struct fields
 Transform <hex> Hex view for decimal numbers and address
 Transform <num> Decimal view for decimal numbers and address
 
