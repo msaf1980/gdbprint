@@ -182,3 +182,6 @@ p_v tNode_head <list> [0:1 -->next].((*next))
 Linked list from sys/queue.h (with installed gdbprint_c)
 p_v msghead.tqh_first <list> [ --> next.tqe_next ] .((!next))
 p_v msghead.tqh_first <list> [ --> next.tqe_next ] .((*next)) 
+
+Transform usage example
+p_v (char *) a<arr>[:end -1]<num> ; *((char *) a1)<num> ; ae<num> ; sort_ranges<arr>[:n].((start<num>, end<num>, sort_type))
