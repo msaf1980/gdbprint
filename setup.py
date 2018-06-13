@@ -2,11 +2,22 @@ import sys
 from distutils.cmd import Command
 from setuptools import setup
 from distutils.command.clean import clean
+from distutils.errors import *
+
+class TestError(DistutilsError):
+    pass
 
 class RunTests(Command):
-    user_options=[]
-    def initialize_options(self): pass
+    user_options = [
+        ('xml-output=', None,
+         "Directory for JUnit compatible XML files."),
+        ]
+    def initialize_options(self):
+        self.xml_output = None
+
     def finalize_options(self): pass
+
+
     def run(self):
         from subprocess import Popen, PIPE, call
         from os import getcwd, execlp, chdir, path
@@ -46,7 +57,16 @@ class RunTests(Command):
             o = re.sub(r'"argv" = \(char \*\*\) <0xHEX> { ptr = <0xHEX> { str_len:\d+ ', '"argv" = (char **) <0xHEX> { ptr = <0xHEX> { str_len:N ', o)
             o = re.sub(cdir, '', o)
             with open(test + '.reject', 'w') as f: f.write(o)
-            call([ 'diff', '-u', test + '.out', test + '.reject' ])
+            with open(test + '.out', 'r') as f: i = f.read()
+            if o != i:
+                if self.xml_output:
+                    sys.stdout.write('<testsuite tests="1">\n<testcase classname="gdb" name="GdbTest">\n<failure type="Fail">')
+                    sys.stdout.flush()
+
+                call([ 'diff', '-u', test + '.out', test + '.reject' ])
+
+                if self.xml_output:
+                    sys.stdout.write('</testcase>\n</testsuite>\n')
 
 
 class RunClean(clean):
