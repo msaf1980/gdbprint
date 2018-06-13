@@ -1,5 +1,6 @@
 import sys
 import os
+import time
 from distutils.cmd import Command
 from setuptools import setup
 from distutils.command.clean import clean
@@ -37,9 +38,9 @@ class RunTests(Command):
 
         for test in tests:
             if self.xml_output:
-                xmlfile.write('<testcase classname="gdbtest" name="%s">\n' % test)
+                xmlfile.write('<testcase classname="gdbtest" name="%s"' % test)
             else:
-                sys.stdout.write(test + "\n")
+                sys.stdout.write(test)
             sys.stdout.flush()
             test = path.join(cwd, test)
             fg = open(test+'.gdb', 'r')
@@ -53,6 +54,7 @@ class RunTests(Command):
             fg.close()
             fi.close()
             fo.close()
+            start = time.time()
             p = Popen(['gdb', '-batch', '-n', '-x', test + '.in'], cwd=cwd, stdout=PIPE, stderr=PIPE, universal_newlines=True)
             (o, e) = p.communicate()
             err = re.sub(r'warning: .*\n', '', e)
@@ -67,6 +69,11 @@ class RunTests(Command):
             #o = re.sub(r'(=.*) 0x[0-9a-f]+', r'\1 0xXXXXX', o)            
             o = re.sub(r'"argv" = \(char \*\*\) <0xHEX> { ptr = <0xHEX> { str_len:\d+ ', '"argv" = (char **) <0xHEX> { ptr = <0xHEX> { str_len:N ', o)
             o = re.sub(cdir, '', o)
+            timediff = time.time() - start
+            if self.xml_output:
+                xmlfile.write(' time="%f">\n' % timediff)
+            else:
+                sys.stdout.write(' in %f s\n' % timediff)
             with open(test + '.reject', 'w') as f: f.write(o)
             with open(test + '.out', 'r') as f: i = f.read()
 
