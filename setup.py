@@ -19,6 +19,7 @@ class RunTests(Command):
 
 
     def run(self):
+        tests = ['test_testout', 'test_testout_v2']
         from subprocess import Popen, PIPE, call
         from os import getcwd, execlp, chdir, path
         import re
@@ -26,9 +27,16 @@ class RunTests(Command):
         cwd = path.join(cdir, 'tests')
         chdir(cwd)
         if call(["make"]):
-    	    raise Exception("make failed")
-        for test in ['test_testout', 'test_testout_v2']:
-            sys.stdout.write(test + "\n")
+            raise Exception("make failed")
+
+        if self.xml_output:
+            sys.stdout.write('<testsuite tests="%d">\n' % len(tests))
+
+        for test in tests:
+            if self.xml_output:
+                sys.stdout.write('<testcase classname="gdbtest" name="%s">\n' % test)
+            else:
+                sys.stdout.write(test + "\n")
             sys.stdout.flush()
             test = path.join(cwd, test)
             fg = open(test+'.gdb', 'r')
@@ -58,15 +66,25 @@ class RunTests(Command):
             o = re.sub(cdir, '', o)
             with open(test + '.reject', 'w') as f: f.write(o)
             with open(test + '.out', 'r') as f: i = f.read()
+
             if o != i:
                 if self.xml_output:
-                    sys.stdout.write('<testsuite tests="1">\n<testcase classname="gdb" name="GdbTest">\n<failure type="Fail">')
+                    sys.stdout.write('<failure message="test failure">')
                     sys.stdout.flush()
 
                 call([ 'diff', '-u', test + '.out', test + '.reject' ])
 
                 if self.xml_output:
-                    sys.stdout.write('</testcase>\n</testsuite>\n')
+                    sys.stdout.write('</failure>\n')
+
+            if self.xml_output:
+                sys.stdout.write('</testcase>\n')
+
+        if self.xml_output:
+            sys.stdout.write('</testsuite>\n')
+
+        if o != i:
+            raise TestError("test failed!")
 
 
 class RunClean(clean):
