@@ -129,14 +129,15 @@ if __name__ == '__main__':
     pname = 'gdbprint'
 
     setup(name=pname,
-        version='0.1.1',
+        #version='0.1.2',
+        version='0.1.1-master',
         description='GDB data structuras browser with Python API',
         url='http://github.com/msaf1980/gdbprint',
         author='Michail Safronov',
         author_email='msaf1980@gmail.com',
         license='MIT',
         packages=[pname],
-        zip_safe=True,
+        zip_safe=False,
         cmdclass={
             'test': RunTests,
             'clean': RunClean
