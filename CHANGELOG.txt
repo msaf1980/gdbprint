@@ -2,6 +2,8 @@ master
 
 Add XML output for test
 
+python setup.py test --xml-output=result.xml
+
 v.0.1.1
 
 Support for python 3.5
