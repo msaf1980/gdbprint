@@ -11,7 +11,6 @@ Breakpoint 1, main at test.cpp:99
 (gdb) p_s verbose 2
 (gdb) p_s w 0
 (gdb) p_l
-1
 frame = "main(int, char**)" {
     "act" = (action) EXIT (0),
     "argc" = (int) 1,
