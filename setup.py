@@ -10,7 +10,7 @@ class TestError(DistutilsError):
 class RunTests(Command):
     user_options = [
         ('xml-output=', None,
-         "Directory for JUnit compatible XML files."),
+         "Flag for JUnit compatible XML output."),
         ]
     def initialize_options(self):
         self.xml_output = None
