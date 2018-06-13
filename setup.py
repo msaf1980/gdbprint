@@ -1,4 +1,5 @@
 import sys
+import os
 from distutils.cmd import Command
 from setuptools import setup
 from distutils.command.clean import clean
@@ -10,7 +11,7 @@ class TestError(DistutilsError):
 class RunTests(Command):
     user_options = [
         ('xml-output=', None,
-         "Flag for JUnit compatible XML output."),
+         "file for JUnit compatible XML output."),
         ]
     def initialize_options(self):
         self.xml_output = None
@@ -24,17 +25,19 @@ class RunTests(Command):
         from os import getcwd, execlp, chdir, path
         import re
         cdir = path.dirname(path.realpath(__file__))
-        cwd = path.join(cdir, 'tests')
-        chdir(cwd)
-        if call(["make"]):
-            raise Exception("make failed")
 
         if self.xml_output:
-            sys.stdout.write('<testsuite tests="%d">\n' % len(tests))
+            xmlfile = open(self.xml_output, "w")
+            xmlfile.write('<?xml version="1.0" encoding="utf-8"?>\n<testsuite tests="%d">\n' % len(tests))
+
+        cwd = path.join(cdir, 'tests')
+        chdir(cwd)
+        if os.system("make > /dev/null 2>&1"):
+            raise Exception("make failed")
 
         for test in tests:
             if self.xml_output:
-                sys.stdout.write('<testcase classname="gdbtest" name="%s">\n' % test)
+                xmlfile.write('<testcase classname="gdbtest" name="%s">\n' % test)
             else:
                 sys.stdout.write(test + "\n")
             sys.stdout.flush()
@@ -50,8 +53,8 @@ class RunTests(Command):
             fg.close()
             fi.close()
             fo.close()
-            p=Popen(['gdb', '-batch', '-n', '-x', test + '.in'], cwd=cwd, stdout=PIPE, stderr=PIPE, universal_newlines=True)
-            (o,e)=p.communicate()
+            p = Popen(['gdb', '-batch', '-n', '-x', test + '.in'], cwd=cwd, stdout=PIPE, stderr=PIPE, universal_newlines=True)
+            (o, e) = p.communicate()
             err = re.sub(r'warning: .*\n', '', e)
             err = re.sub(r'[ \t]+\n', '', err)
             err = re.sub(r'\n', '', err)
@@ -69,19 +72,22 @@ class RunTests(Command):
 
             if o != i:
                 if self.xml_output:
-                    sys.stdout.write('<failure message="test failure">')
-                    sys.stdout.flush()
-
-                call([ 'diff', '-u', test + '.out', test + '.reject' ])
+                    xmlfile.write('<failure message="test failure">\n')
+                    diff_p = Popen(['diff', '-u', test + '.out', test + '.reject' ], cwd=cwd, stdout=PIPE, universal_newlines=True)
+                    (diff_o, diff_e) = diff_p.communicate()
+                    xmlfile.write(diff_o)
+                else:
+                    call([ 'diff', '-u', test + '.out', test + '.reject' ])
 
                 if self.xml_output:
-                    sys.stdout.write('</failure>\n')
+                    xmlfile.write('</failure>\n')
 
             if self.xml_output:
-                sys.stdout.write('</testcase>\n')
+                xmlfile.write('</testcase>\n')
 
         if self.xml_output:
-            sys.stdout.write('</testsuite>\n')
+            xmlfile.write('</testsuite>\n')
+            xmlfile.close()
 
         if o != i:
             raise TestError("test failed!")

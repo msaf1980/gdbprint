@@ -4,6 +4,7 @@ gdbprint*.egg-info
 __pycache__
 *.pyc
 .*.swp
+*.xml
 test
 test*.in
 test*.out
