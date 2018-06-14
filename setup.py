@@ -14,11 +14,11 @@ class RunTests(Command):
         ('xml-output=', None,
          "file for JUnit compatible XML output."),
         ]
+
     def initialize_options(self):
         self.xml_output = None
 
     def finalize_options(self): pass
-
 
     def run(self):
         tests = ['test_testout', 'test_testout_v2']
@@ -77,7 +77,10 @@ class RunTests(Command):
             with open(test + '.reject', 'w') as f: f.write(o)
             with open(test + '.out', 'r') as f: i = f.read()
 
-            if o != i:
+            if o == i:
+                failed = False
+            else:
+                failed = True
                 if self.xml_output:
                     xmlfile.write('<failure message="test failure">\n')
                     diff_p = Popen(['diff', '-u', test + '.out', test + '.reject' ], cwd=cwd, stdout=PIPE, universal_newlines=True)
@@ -96,7 +99,7 @@ class RunTests(Command):
             xmlfile.write('</testsuite>\n')
             xmlfile.close()
 
-        if o != i:
+        if failed:
             raise TestError("test failed!")
 
 
