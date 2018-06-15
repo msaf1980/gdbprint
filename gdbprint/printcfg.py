@@ -27,9 +27,6 @@ class OutType:
         else:
             return "unknown (%d)" % out_type
  
-name = "gdbprint"
-version = "0.1.1"
-
 out_type = OutType.TEXT
 debug = 0
 #xml = False

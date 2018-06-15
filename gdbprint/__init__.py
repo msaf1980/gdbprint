@@ -1,5 +1,8 @@
 # -*- coding: utf-8 -*-
 
+name = "gdbprint"
+version = "0.1.1"
+
 import sys
 import gdb
 import re
@@ -196,7 +199,7 @@ class GlobalCommand(gdb.Command):
             raise
 
 
-print_str("load %s %s\n" % (printcfg.name, printcfg.version))
+print_str("load %s %s\n" % (name, version))
 cmd_parse = CommandParser()
 CommandParserSet()
 CommandParserCmd()
