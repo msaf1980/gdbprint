@@ -553,7 +553,9 @@ class GdbValue:
 
     def print_struct(self, depth, expr, pos, indent, mod):
         if printcfg.debug > 2:
+	    print_str("#DEBUG: ")
             print_obj(mod)
+	    print_str("#\n")
 
         if not mod.transform is None and mod.transform.v == Transform.SIMPLE:
             self.value.value = str(self.v)
