@@ -281,7 +281,7 @@ class GdbValue:
 
             self.value.print_post()
         except Exception as e:
-            value_err = ValueOut()
+            value_err = ValueOut(None, None, self.vtype)
             value_err.error = error_format(e)
             value_err.print_all()
 
