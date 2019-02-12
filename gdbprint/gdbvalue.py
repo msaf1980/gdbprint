@@ -553,9 +553,9 @@ class GdbValue:
 
     def print_struct(self, depth, expr, pos, indent, mod):
         if printcfg.debug > 2:
-	    print_str("#DEBUG: ")
+            print_str("#DEBUG: ")
             print_obj(mod)
-	    print_str("#\n")
+            print_str("#\n")
 
         if not mod.transform is None and mod.transform.v == Transform.SIMPLE:
             self.value.value = str(self.v)
@@ -927,7 +927,11 @@ class GdbValue:
                     if action == Filter.SKIP:
                         continue
 
-                    velem.print_v(value_f.name, depth2, expr, pos, False, True, indent + printcfg.indent_pre)
+                    if velem.vtype.code == gdb.TYPE_CODE_PTR:
+                        list_depth = depth2 + 1
+                    else:
+                        list_depth = depth2
+                    velem.print_v(value_f.name, list_depth, expr, pos, False, True, indent + printcfg.indent_pre)
                     value_f.print_post("", True, True)
                 except StopIteration:
                     value_f.address = 0
