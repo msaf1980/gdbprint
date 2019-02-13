@@ -2,11 +2,11 @@
 (gdb) py sys.path.insert(0, '..')
 (gdb) py import gdbprint
 load gdbprint 0.1.1
-(gdb) break 99
+(gdb) break 100
 (gdb) run
-Breakpoint: file test.cpp, line 99.
+Breakpoint: file test.cpp, line 100.
 
-Breakpoint 1, main at test.cpp:99
+Breakpoint 1, main at test.cpp:100
 
 (gdb) p_s verbose 0
 (gdb) p_s w 0
@@ -304,8 +304,8 @@ frame = "global" {
 "1" = 0x1
 (gdb) p_v -1<hex>
 "- 1" = -0x1
-(gdb) p_v 1-n<hex>
-"1 - n" = -0x1
+(gdb) p_v n-1<hex>
+"n - 1" = 0x1
 (gdb) p_v struct_ex.(( i, ui ))
 "struct_ex" = {
     "i" = 1000,

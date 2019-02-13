@@ -83,6 +83,7 @@ int main(int argc, char* argv[]) {
         struct_ex.f = 1000.0F;
         struct_ex.d = 1000.0D;
 	struct_ex.inc.inc = 0;
+	struct_ex.s[0] = '\0';
         void *st_void_ptr = &struct_ex;
         void **st_void_2ptr = &st_void_ptr;
         st *st_ptr = &struct_ex;

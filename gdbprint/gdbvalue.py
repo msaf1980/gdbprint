@@ -347,6 +347,7 @@ class GdbValue:
         try:
             result = ""
             s_decode = char_array.decode(cp_str)
+            print_debug(str(len(char_array)))
             if cp_str in [ "utf-8" ] and len(s_decode) < len(char_array):
                 result += cp_str + ":"
             result += '\"' + s_decode + '\"' + null_end
