@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 name = "gdbprint"
-version = "0.1.2"
+version = "0.1.3"
 
 import sys
 import gdb

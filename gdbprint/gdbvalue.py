@@ -347,7 +347,7 @@ class GdbValue:
         try:
             result = ""
             s_decode = char_array.decode(cp_str)
-            print_debug(str(len(char_array)))
+            #print_debug(str(len(char_array)))
             if cp_str in [ "utf-8" ] and len(s_decode) < len(char_array):
                 result += cp_str + ":"
             result += '\"' + s_decode + '\"' + null_end
@@ -553,10 +553,10 @@ class GdbValue:
         self.value.print_post(indent)
 
     def print_struct(self, depth, expr, pos, indent, mod):
-        if printcfg.debug > 2:
-            print_str("#DEBUG: ")
-            print_obj(mod)
-            print_str("#\n")
+        # if printcfg.debug > 2:
+            # print_str("#DEBUG: ")
+            # print_obj(mod)
+            # print_str("#\n")
 
         if not mod.transform is None and mod.transform.v == Transform.SIMPLE:
             self.value.value = str(self.v)
@@ -571,6 +571,8 @@ class GdbValue:
                 obj = resolve_printer(short_name(str(self.vtype)))
                 if obj is None is None and mod.get_pos_type == FType.RANGE and not mod.ranges.next_v is None:
                     obj = resolve_printer_typename("list")
+                if printcfg.debug > 2:
+                    print_str("#DEBUG: resolve type %s: %s#" % ((short_name(str(self.vtype))), str(obj)))
         else:
             obj = None
         if not obj is None:

@@ -86,7 +86,6 @@ class DisplayType:
 
 
 def register_printer(obj):
-    print_debug(str(obj))
     if hasattr(obj,  'names'):
         for name in obj.names:
             debugprinters[name] = obj
@@ -184,5 +183,3 @@ def print_obj(s, indent = ""):
         print_str("%s)\n" % indent)
     else:
         print_str("%s\n" % str(s))
-
-
