@@ -971,8 +971,6 @@ class GdbValue:
                 lo.seek_first()
 
             while lo.get_pos() <= end:
-                value_f = ValueOut("[%d]" % lo.get_pos())
-                value_f.print_name(indent + printcfg.indent_pre)
                 try:
                     (n, elem) = lo.next()
                     if n < start:
@@ -983,6 +981,9 @@ class GdbValue:
                     if action == Filter.SKIP:
                         continue
 
+                    value_f = ValueOut("[%d]" % n)
+                    value_f.print_name(indent + printcfg.indent_pre)
+
                     if velem.vtype.code == gdb.TYPE_CODE_PTR:
                         list_depth = depth2 + 1
                     else:
@@ -991,6 +992,8 @@ class GdbValue:
                                   True, indent + printcfg.indent_pre)
                     value_f.print_post("", True, True)
                 except StopIteration:
+                    value_f = ValueOut("[%d]" % n)
+                    value_f.print_name(indent + printcfg.indent_pre)
                     value_f.address = 0
                     value_f.print_value()
                     value_f.print_post(indent + printcfg.indent_pre, True,

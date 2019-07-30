@@ -1,6 +1,7 @@
 #!/bin/sh
 
-GDB_PYTHON=`echo 'py import sys ; print(sys.executable)' | gdb -q | egrep '\(gdb\) /' | cut -d' ' -f2`
+GDB=`which gdb`
+GDB_PYTHON=`ldd ${GDB} | grep libpython | awk '{ print $1; }' | sed -e 's/\.so.*//g' -e 's/libpython/\/usr\/bin\/python/g'`
 
 [ -n "${GDB_PYTHON}" ] || {
     echo "incorrect GDB_PYTHON" >&2
