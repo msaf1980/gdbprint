@@ -183,3 +183,11 @@ def print_obj(s, indent = ""):
         print_str("%s)\n" % indent)
     else:
         print_str("%s\n" % str(s))
+
+
+def wchar_to_string(code):
+    if sys.version_info < (3, 0, 0):
+        return str(code) + ' L\'' + str(unichr(code)) + '\''
+    else:
+        return str(code) + ' L\'' + str(chr(code)) + '\''
+ 

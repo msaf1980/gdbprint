@@ -107,3 +107,8 @@ def char_to_string(nvalue, cp = None):
         else:
             return str(c) + " \"" + c.to_bytes(1, byteorder='big').decode(printcfg.codepage_failback) + "\""
 
+def wchar_to_string(code):
+    if sys.version_info < (3, 0, 0):
+        return str(code) + ' L\'' + str(unichr(code)) + '\''
+    else:
+        return str(code) + ' L\'' + str(chr(code)) + '\''
