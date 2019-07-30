@@ -14,7 +14,7 @@ before_install:
 
 script:
  # Run tests in Container
- - sudo docker run --rm=true -v `pwd`:/build:rw msaf1980/${OS_TYPE}${OS_VERSION}-gcc${GCC_VERSION} /bin/bash -c "cd /build && ./test.sh"
+ - sudo docker run --rm=true -v `pwd`:/build:rw msaf1980/${OS_TYPE}${OS_VERSION}-gcc${GCC_VERSION} /bin/bash -c ". /etc/profile && cd /build && ./test.sh"
 
 notifications:
   email: false
