@@ -1,0 +1,20 @@
+language:
+  - c
+  - c++
+  - python
+services:
+  - docker
+env:
+  #matrix:
+  - OS_TYPE=centos OS_VERSION=7 GCC_VERSION=4.8 GDB_PYTHON=/usr/bin/python
+  - OS_TYPE=centos OS_VERSION=7 GCC_VERSION=6   GDB_PYTHON=/usr/bin/python
+
+before_install:
+  - sudo docker pull msaf1980/${OS_TYPE}${OS_VERSION}-gcc${GCC_VERSION}
+
+script:
+ # Run tests in Container
+ - sudo docker run --rm=true -v `pwd`:/build:rw msaf1980/${OS_TYPE}${OS_VERSION}-gcc${GCC_VERSION} /bin/bash -c "cd /build && ${GDB_PYTHON} ./test.sh"
+
+notifications:
+  email: false
