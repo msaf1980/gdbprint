@@ -6,17 +6,19 @@ services:
   - docker
 env:
   #matrix:
-  - OS_TYPE=centos OS_VERSION=7 GCC_VERSION=4.8
-  - OS_TYPE=centos OS_VERSION=7 GCC_VERSION=6
-  - OS_TYPE=centos OS_VERSION=7 GCC_VERSION=7
-  - OS_TYPE=centos OS_VERSION=7 GCC_VERSION=8
+  - OS_TYPE=centos OS_VERSION=7 COMPILER_VERSION="gcc4.8"
+  - OS_TYPE=centos OS_VERSION=7 COMPILER_VERSION="gcc6"
+  - OS_TYPE=centos OS_VERSION=7 COMPILER_VERSION="gcc7"
+  - OS_TYPE=centos OS_VERSION=7 COMPILER_VERSION="gcc8"
+  - OS_TYPE=deb OS_VERSION=9 COMPILER_VERSION="gcc6"
+  - OS_TYPE=deb OS_VERSION=10 COMPILER_VERSION="gcc8"
 
 before_install:
-  - sudo docker pull msaf1980/${OS_TYPE}${OS_VERSION}-gcc${GCC_VERSION}
+  - sudo docker pull msaf1980/${OS_TYPE}${OS_VERSION}-${COMPILER_VERSION}
 
 script:
  # Run tests in Container
- - sudo docker run --rm=true -v `pwd`:/build:rw msaf1980/${OS_TYPE}${OS_VERSION}-gcc${GCC_VERSION} /bin/bash -c ". /etc/profile && cd /build && ./test.sh"
+ - sudo docker run --rm=true -v `pwd`:/build:rw msaf1980/${OS_TYPE}${OS_VERSION}-${COMPILER_VERSION} /bin/bash -c ". /etc/profile && cd /build && ./test.sh"
 
 notifications:
   email: false
