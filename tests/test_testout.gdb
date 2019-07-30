@@ -1,7 +1,7 @@
 (gdb) file test
 (gdb) py sys.path.insert(0, '..')
 (gdb) py import gdbprint
-load gdbprint 0.1.1
+load gdbprint 0.1.3
 (gdb) break 100
 (gdb) run
 Breakpoint: file test.cpp, line 100.

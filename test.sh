@@ -1,4 +1,4 @@
-[ -z ${GDB_PYTHON} ] && {
+[ -z "${GDB_PYTHON}" ] && {
     echo "incorrect GDB_PYTHON" >&2
     exit 1
 }
