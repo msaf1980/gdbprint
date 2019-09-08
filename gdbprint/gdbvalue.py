@@ -970,6 +970,7 @@ class GdbValue:
             if lo.get_pos() > start:
                 lo.seek_first()
 
+            n = 0
             while lo.get_pos() <= end:
                 try:
                     (n, elem) = lo.next()
@@ -1006,9 +1007,10 @@ class GdbValue:
                                        True)
                     break
 
-                n += 1
                 if action == Filter.STOP:
                     break
+
+                n += 1
 
         self.value.print_post(indent)
 
