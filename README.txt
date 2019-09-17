@@ -2,7 +2,13 @@
 
 Package for browse data structuras with GDB python API
 
-Tested Python version - 2.7 (gdb 7.6) and 3.5 (gdb 7.12)
+Tested Python version - 2.7 (gdb 7.6), 3.5 (gdb 7.12), 3.6 (gdb 8.1)
+
+Install (in local packages as non-root)
+$ ./install.sh --user
+
+Install as root (in system packages)
+$ ./install.sh
 
 Print local variables
   p_l
